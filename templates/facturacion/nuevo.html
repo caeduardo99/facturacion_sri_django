@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Nueva factura | FacturaEC{% endblock %}
+{% block header_title %}Nueva factura{% endblock %}
+{% block content %}
+<div class="mb-8"><a href="{% url 'facturacion:lista' %}" class="text-sm font-medium text-blue-600">← Volver a facturación</a><h1 class="mt-4 text-3xl font-bold">Nueva factura</h1><p class="mt-1 text-slate-500">Crea una factura y calcula automáticamente sus valores.</p></div>
+{% if error %}<div class="mb-6 max-w-6xl rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</div>{% endif %}
+<form method="post" id="facturaForm" class="max-w-6xl">{% csrf_token %}
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+<h2 class="text-lg font-bold">Datos del comprobante</h2>
+<div class="mt-5 grid gap-5 md:grid-cols-4">
+<div class="md:col-span-2"><label class="text-sm font-semibold">Cliente</label><select name="cliente" required class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"><option value="">Seleccione...</option>{% for c in clientes %}<option value="{{ c.id }}" {% if form.cliente == c.id|stringformat:"s" %}selected{% endif %}>{{ c.identificacion }} - {{ c.nombres }}</option>{% endfor %}</select></div>
+<div><label class="text-sm font-semibold">Tipo</label><select name="tipo" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"><option value="01">Factura</option></select></div>
+<div><label class="text-sm font-semibold">Fecha</label><input type="date" value="{% now 'Y-m-d' %}" disabled class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Establecimiento</label><input name="establecimiento" value="001" maxlength="3" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Punto de emisión</label><input name="punto_emision" value="001" maxlength="3" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+</div></div>
+
+<div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+<div class="flex items-center justify-between"><div><h2 class="text-lg font-bold">Detalle</h2><p class="text-sm text-slate-500">Agrega los productos o servicios.</p></div><button type="button" id="agregar" class="rounded-xl bg-blue-600 px-4 py-2 font-semibold text-white">+ Agregar producto</button></div>
+<div class="mt-5 overflow-x-auto"><table class="min-w-full"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="px-3 py-3">Producto</th><th class="px-3 py-3 w-32">Cantidad</th><th class="px-3 py-3 w-36">Precio</th><th class="px-3 py-3 w-32">IVA</th><th class="px-3 py-3 w-36">Total</th><th></th></tr></thead><tbody id="detalle"></tbody></table></div>
+</div>
+
+<div class="mt-6 grid gap-6 md:grid-cols-2">
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="text-lg font-bold">Forma de pago</h2><select name="forma_pago" class="mt-5 w-full rounded-xl border border-slate-300 px-4 py-3"><option value="20">Otros con utilización del sistema financiero</option><option value="01">Sin utilización del sistema financiero</option><option value="16">Tarjeta de débito</option><option value="19">Tarjeta de crédito</option></select></div>
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+<div class="flex justify-between py-2 text-slate-600"><span>Subtotal</span><strong id="subtotal">$0.00</strong></div><div class="flex justify-between py-2 text-slate-600"><span>IVA</span><strong id="iva">$0.00</strong></div><div class="mt-3 flex justify-between border-t pt-4 text-xl font-bold"><span>Total</span><strong id="total">$0.00</strong></div>
+</div></div>
+<div class="mt-6 flex justify-end"><button class="rounded-xl bg-emerald-600 px-7 py-3 font-semibold text-white">Guardar factura</button></div>
+</form>
+<script>
+const productos={{ productos|json_script:"productos-data" }};
+const data=JSON.parse(document.getElementById("productos-data").textContent);
+const tbody=document.getElementById("detalle");
+function money(n){return "$"+n.toFixed(2)}
+function recalc(){let sub=0,iva=0;tbody.querySelectorAll("tr").forEach(row=>{const p=data.find(x=>String(x.id)===row.querySelector(".producto").value);if(!p)return;const q=parseFloat(row.querySelector(".cantidad").value)||0;const base=q*parseFloat(p.precio);const tax=base*(parseFloat(p.iva)||0)/100;row.querySelector(".precio").textContent=money(parseFloat(p.precio));row.querySelector(".iva-linea").textContent=money(tax);row.querySelector(".total-linea").textContent=money(base+tax);sub+=base;iva+=tax;});document.getElementById("subtotal").textContent=money(sub);document.getElementById("iva").textContent=money(iva);document.getElementById("total").textContent=money(sub+iva)}
+function addRow(){const row=document.createElement("tr");row.className="border-b";let opts='<option value="">Seleccione...</option>';data.forEach(p=>opts+=`<option value="${p.id}">${p.codigo} - ${p.nombre}</option>`);row.innerHTML=`<td class="px-3 py-3"><select name="producto_id" class="producto w-full rounded-lg border border-slate-300 px-3 py-2" required>${opts}</select></td><td class="px-3 py-3"><input name="cantidad" type="number" step="0.0001" min="0.0001" value="1" class="cantidad w-full rounded-lg border border-slate-300 px-3 py-2"></td><td class="px-3 py-3 precio">$0.00</td><td class="px-3 py-3 iva-linea">$0.00</td><td class="px-3 py-3 total-linea font-semibold">$0.00</td><td class="px-3 py-3"><button type="button" class="quitar text-red-600 font-semibold">Quitar</button></td>`;tbody.appendChild(row);row.querySelector(".producto").addEventListener("change",recalc);row.querySelector(".cantidad").addEventListener("input",recalc);row.querySelector(".quitar").addEventListener("click",()=>{row.remove();recalc()});}
+document.getElementById("agregar").addEventListener("click",addRow);addRow();
+</script>
+{% endblock %}
