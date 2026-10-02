@@ -157,6 +157,46 @@ def consultar(request):
 
 
 @login_required
+def editar(request, pk):
+    cliente = Cliente.objects.get(pk=pk)
+
+    if request.method == "POST":
+        identificacion = normalizar_identificacion(request.POST.get("identificacion"))
+        tipo = request.POST.get("tipo_identificacion", "05")
+        nombres = request.POST.get("nombres", "").strip()
+
+        if not identificacion or not nombres:
+            return render(request, "clientes/editar.html", {
+                "cliente": cliente,
+                "error": "La identificación y el nombre son obligatorios.",
+            })
+
+        cliente.tipo_identificacion = tipo
+        cliente.identificacion = identificacion
+        cliente.nombres = nombres
+        cliente.direccion = request.POST.get("direccion", "").strip()
+        cliente.telefono = request.POST.get("telefono", "").strip()
+        cliente.email = request.POST.get("email", "").strip()
+        cliente.save()
+
+        return redirect("clientes:lista")
+
+    return render(request, "clientes/editar.html", {"cliente": cliente})
+
+
+@login_required
+def eliminar(request, pk):
+    cliente = Cliente.objects.get(pk=pk)
+
+    if request.method == "POST":
+        cliente.activo = False
+        cliente.save(update_fields=["activo", "actualizado"])
+        return redirect("clientes:lista")
+
+    return render(request, "clientes/eliminar.html", {"cliente": cliente})
+
+
+@login_required
 def crear(request):
     if request.method != "POST":
         return redirect("clientes:nuevo")
