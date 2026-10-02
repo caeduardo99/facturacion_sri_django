@@ -64,22 +64,16 @@ def consultar_ruc(ruc):
 
 
 def consultar_cedula(cedula):
-    if not CEDULA_API_TOKEN:
-        return None, (
-            "La consulta de cédulas no está configurada. "
-            "Agrega CEDULA_API_TOKEN en tu archivo .env."
-        )
-
-    url = CEDULA_API_URL.replace("{cedula}", cedula)
+    url = "http://181.198.254.69:91/api/consultar-identificacion/"
 
     try:
         response = requests.get(
             url,
-            timeout=15,
+            params={"numero": cedula},
+            timeout=10,
             headers={
                 "Accept": "application/json",
                 "User-Agent": "FacturaEC/1.0",
-                "X-Credits-Token": CEDULA_API_TOKEN,
             },
         )
         response.raise_for_status()
@@ -87,69 +81,56 @@ def consultar_cedula(cedula):
     except requests.RequestException:
         return None, "No fue posible conectarse con el servicio de consulta de cédulas."
     except ValueError:
-        return None, "El servicio de cédulas respondió con un formato no válido."
+        return None, "El servicio de consulta de cédulas respondió con un formato no válido."
 
-    # consultas.ec devuelve normalmente los datos dentro de "data".
-    # Se dejan varias rutas para tolerar pequeñas diferencias del proveedor.
-    persona = data.get("data", data) if isinstance(data, dict) else data
+    if isinstance(data, list):
+        data = data[0] if data else None
+
+    if not isinstance(data, dict) or not data:
+        return None, "No se encontró información para esa cédula."
+
+    # El servicio puede devolver los datos directamente o dentro de data/result.
+    persona = data.get("data") or data.get("result") or data
 
     if isinstance(persona, list):
         persona = persona[0] if persona else None
 
-    if not isinstance(persona, dict) or not persona:
+    if not isinstance(persona, dict):
         return None, "No se encontró información para esa cédula."
 
     nombre = (
-        persona.get("name")
-        or persona.get("nombre")
+        persona.get("nombre")
+        or persona.get("nombres")
         or persona.get("nombreCompleto")
-        or " ".join(
-            filter(
-                None,
-                [
-                    persona.get("firstname") or persona.get("nombres"),
-                    persona.get("lastname") or persona.get("apellidos"),
-                ],
-            )
-        )
+        or persona.get("razonSocial")
+        or persona.get("name")
+        or ""
     )
 
-    address = persona.get("address") or {}
-    if isinstance(address, dict):
-        direccion = (
-            address.get("completeAddress")
-            or address.get("direccion")
-            or address.get("street")
-            or ""
-        )
-    else:
-        direccion = address or ""
-
-    contact = persona.get("contact") or {}
-    if isinstance(contact, dict):
-        telefono = (
-            contact.get("phone")
-            or contact.get("cellphone")
-            or contact.get("telefono")
-            or ""
-        )
-        email = contact.get("email") or contact.get("correo") or ""
-    else:
-        telefono = persona.get("telefono") or persona.get("phone") or ""
-        email = persona.get("email") or persona.get("correo") or ""
-
     if not nombre:
-        return None, "La consulta no devolvió el nombre de la persona."
+        nombres = persona.get("nombres") or persona.get("firstname") or ""
+        apellidos = persona.get("apellidos") or persona.get("lastname") or ""
+        nombre = f"{nombres} {apellidos}".strip()
 
     return {
         "identificacion": cedula,
         "ruc": cedula + "001",
         "nombres": nombre,
-        "estado": persona.get("estado") or "",
-        "direccion": direccion,
-        "telefono": telefono,
-        "email": email,
-        "fuente": "Consulta de cédula",
+        "estado": persona.get("estado") or persona.get("estadoCivil") or "",
+        "direccion": (
+            persona.get("direccion")
+            or persona.get("direccionDomicilio")
+            or persona.get("address")
+            or ""
+        ),
+        "telefono": (
+            persona.get("telefono")
+            or persona.get("celular")
+            or persona.get("phone")
+            or ""
+        ),
+        "email": persona.get("email") or persona.get("correo") or "",
+        "fuente": "Consulta de identificación",
     }, None
 
 
