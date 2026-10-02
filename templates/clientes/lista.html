@@ -1,1 +1,27 @@
-{% extends 'base.html' %}{% block title %}Clientes | FacturaEC{% endblock %}{% block header_title %}Clientes{% endblock %}{% block content %}<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h1 class="text-3xl font-bold">Clientes</h1><p class="mt-1 text-slate-500">Administra tus clientes y sus datos de facturación.</p></div><a href="{% url 'clientes:nuevo' %}" class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">Nuevo cliente</a></div><div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm"><table class="min-w-full text-left text-sm"><thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-6 py-4">Identificación</th><th class="px-6 py-4">Nombre</th><th class="px-6 py-4">Email</th></tr></thead><tbody class="divide-y divide-slate-100">{% for c in clientes %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 font-medium">{{ c.identificacion }}</td><td class="px-6 py-4">{{ c.nombres }}</td><td class="px-6 py-4 text-slate-500">{{ c.email|default:"-" }}</td></tr>{% empty %}<tr><td colspan="3" class="px-6 py-12 text-center text-slate-500">No existen clientes registrados.</td></tr>{% endfor %}</tbody></table></div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Clientes | FacturaEC{% endblock %}
+{% block header_title %}Clientes{% endblock %}
+{% block content %}
+<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div><h1 class="text-3xl font-bold">Clientes</h1><p class="mt-1 text-slate-500">Administra tus clientes y sus datos de facturación.</p></div>
+  <a href="{% url 'clientes:nuevo' %}" class="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">Nuevo cliente</a>
+</div>
+<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+<table class="min-w-full text-left text-sm">
+<thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-6 py-4">Identificación</th><th class="px-6 py-4">Nombre</th><th class="px-6 py-4">Email</th><th class="px-6 py-4 text-right">Acciones</th></tr></thead>
+<tbody class="divide-y divide-slate-100">
+{% for c in clientes %}
+<tr class="hover:bg-slate-50">
+<td class="px-6 py-4 font-medium">{{ c.identificacion }}</td>
+<td class="px-6 py-4">{{ c.nombres }}</td>
+<td class="px-6 py-4 text-slate-500">{{ c.email|default:"-" }}</td>
+<td class="px-6 py-4 text-right">
+<a href="{% url 'clientes:editar' c.pk %}" class="mr-3 font-semibold text-blue-600 hover:text-blue-800">Editar</a>
+<a href="{% url 'clientes:eliminar' c.pk %}" class="font-semibold text-red-600 hover:text-red-800">Eliminar</a>
+</td>
+</tr>
+{% empty %}
+<tr><td colspan="4" class="px-6 py-12 text-center text-slate-500">No existen clientes registrados.</td></tr>
+{% endfor %}
+</tbody></table></div>
+{% endblock %}
