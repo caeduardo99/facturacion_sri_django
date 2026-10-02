@@ -5,13 +5,13 @@
 <div class="mb-8">
   <a href="{% url 'clientes:lista' %}" class="text-sm font-medium text-blue-600">← Volver a clientes</a>
   <h1 class="mt-4 text-3xl font-bold text-slate-900">Registrar cliente</h1>
-  <p class="mt-1 text-slate-500">Ingresa la cédula o RUC y consulta los datos disponibles en el SRI.</p>
+  <p class="mt-1 text-slate-500">Ingresa la cédula o RUC y consulta los datos disponibles.</p>
 </div>
 <div class="max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 {% if error %}<div class="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</div>{% endif %}
 <div>
 <label class="text-sm font-semibold text-slate-700">Cédula / RUC</label>
-<div class="mt-2 flex gap-2"><input id="identificacion" maxlength="13" inputmode="numeric" placeholder="Ej. 0102030405" class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-600"><button type="button" id="btnConsultar" class="whitespace-nowrap rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">Consultar SRI</button></div>
+<div class="mt-2 flex gap-2"><input id="identificacion" maxlength="13" inputmode="numeric" placeholder="Ej. 0102030405" class="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-600"><button type="button" id="btnConsultar" class="whitespace-nowrap rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">Consultar</button></div>
 <p id="mensaje" class="mt-2 text-sm text-slate-500"></p>
 </div>
 <form method="post" action="{% url 'clientes:crear' %}" class="mt-7 border-t border-slate-100 pt-7">{% csrf_token %}
@@ -29,8 +29,8 @@
 const $=id=>document.getElementById(id);
 $("btnConsultar").addEventListener("click",async()=>{
  const id=$("identificacion").value.trim(); const msg=$("mensaje"); const btn=$("btnConsultar");
- msg.textContent="Consultando información en el SRI..."; btn.disabled=true;
- try{const r=await fetch("{% url 'clientes:consultar' %}?identificacion="+encodeURIComponent(id));const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||"No se encontró información.");const c=d.cliente;$("formIdentificacion").value=c.identificacion;$("tipoIdentificacion").value=c.identificacion.length===13?"04":"05";$("nombres").value=c.nombres||"";$("direccion").value=c.direccion||"";$("telefono").value=c.telefono||"";$("email").value=c.email||"";msg.textContent="Datos encontrados en el SRI. Revisa la información y guarda el cliente.";msg.className="mt-2 text-sm text-emerald-600"}catch(e){msg.textContent=e.message;msg.className="mt-2 text-sm text-red-600"}finally{btn.disabled=false}
+ msg.textContent="Consultando información..."; btn.disabled=true;
+ try{const r=await fetch("{% url 'clientes:consultar' %}?identificacion="+encodeURIComponent(id));const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||"No se encontró información.");const c=d.cliente;$("formIdentificacion").value=c.identificacion;$("tipoIdentificacion").value=c.identificacion.length===13?"04":"05";$("nombres").value=c.nombres||"";$("direccion").value=c.direccion||"";$("telefono").value=c.telefono||"";$("email").value=c.email||"";msg.textContent="Datos encontrados. Revisa la información y guarda el cliente.";msg.className="mt-2 text-sm text-emerald-600"}catch(e){msg.textContent=e.message;msg.className="mt-2 text-sm text-red-600"}finally{btn.disabled=false}
 });
 </script>
 {% endblock %}
