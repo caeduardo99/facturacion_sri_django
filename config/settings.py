@@ -1,11 +1,12 @@
 from pathlib import Path
 import os
+from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-change-me")
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h.strip()]
+SECRET_KEY = config("DJANGO_SECRET_KEY", default="dev-only-change-me")
+DEBUG = config("DJANGO_DEBUG", default=True, cast=bool)
+ALLOWED_HOSTS = [h.strip() for h in config("DJANGO_ALLOWED_HOSTS", default="127.0.0.1,localhost").split(",") if h.strip()]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -51,18 +52,18 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("PGDATABASE", "facturacion"),
-        "USER": os.getenv("PGUSER", "postgres"),
-        "PASSWORD": os.getenv("PGPASSWORD", ""),
-        "HOST": os.getenv("PGHOST", "127.0.0.1"),
-        "PORT": os.getenv("PGPORT", "5432"),
+        "NAME": config("PGDATABASE", default="facturacion"),
+        "USER": config("PGUSER", default="postgres"),
+        "PASSWORD": config("PGPASSWORD", default=""),
+        "HOST": config("PGHOST", default="127.0.0.1"),
+        "PORT": config("PGPORT", default="5432"),
     }
 }
 
-auto_database_url = os.getenv("DATABASE_URL")
-if auto_database_url:
+DATABASE_URL = config("DATABASE_URL", default="")
+if DATABASE_URL:
     import dj_database_url
-    DATABASES["default"] = dj_database_url.parse(auto_database_url, conn_max_age=600)
+    DATABASES["default"] = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
 
 LANGUAGE_CODE = "es-ec"
 TIME_ZONE = "America/Guayaquil"
@@ -80,19 +81,19 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+REDIS_URL = config("REDIS_URL", default="redis://127.0.0.1:6379/0")
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 
-SRI_AMBIENTE = int(os.getenv("SRI_AMBIENTE", "1"))
-SRI_RECEPCION_PRUEBAS = os.getenv("SRI_RECEPCION_PRUEBAS", "")
-SRI_AUTORIZACION_PRUEBAS = os.getenv("SRI_AUTORIZACION_PRUEBAS", "")
-SRI_RECEPCION_PRODUCCION = os.getenv("SRI_RECEPCION_PRODUCCION", "")
-SRI_AUTORIZACION_PRODUCCION = os.getenv("SRI_AUTORIZACION_PRODUCCION", "")
+SRI_AMBIENTE = config("SRI_AMBIENTE", default=1, cast=int)
+SRI_RECEPCION_PRUEBAS = config("SRI_RECEPCION_PRUEBAS", default="")
+SRI_AUTORIZACION_PRUEBAS = config("SRI_AUTORIZACION_PRUEBAS", default="")
+SRI_RECEPCION_PRODUCCION = config("SRI_RECEPCION_PRODUCCION", default="")
+SRI_AUTORIZACION_PRODUCCION = config("SRI_AUTORIZACION_PRODUCCION", default="")
 
-EMAIL_HOST = os.getenv("EMAIL_HOST", "")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@example.com")
+EMAIL_HOST = config("EMAIL_HOST", default="")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="no-reply@example.com")
