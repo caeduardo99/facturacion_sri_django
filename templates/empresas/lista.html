@@ -1,1 +1,21 @@
-{% extends 'base.html' %}{% block content %}<h1>Empresas</h1><div class='table'><div class='row head'><span>RUC</span><span>Razón social</span></div>{% for e in empresas %}<div class='row'><span>{{ e.ruc }}</span><span>{{ e.razon_social }}</span></div>{% empty %}<p>No existen empresas registradas.</p>{% endfor %}</div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Empresas | FacturaEC{% endblock %}
+{% block header_title %}Empresas{% endblock %}
+{% block content %}
+<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div><h1 class="text-3xl font-bold text-slate-900">Empresas</h1><p class="mt-1 text-slate-500">Configura las empresas que emitirán comprobantes electrónicos.</p></div>
+  <a href="{% url 'empresas:nuevo' %}" class="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">Nueva empresa</a>
+</div>
+<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+<table class="min-w-full text-left text-sm">
+<thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-6 py-4">RUC</th><th class="px-6 py-4">Razón social</th><th class="px-6 py-4">Nombre comercial</th><th class="px-6 py-4">Ambiente</th><th class="px-6 py-4 text-right">Acciones</th></tr></thead>
+<tbody class="divide-y divide-slate-100">
+{% for e in empresas %}
+<tr class="hover:bg-slate-50">
+<td class="px-6 py-4 font-medium">{{ e.ruc }}</td><td class="px-6 py-4">{{ e.razon_social }}</td><td class="px-6 py-4">{{ e.nombre_comercial|default:"-" }}</td>
+<td class="px-6 py-4">{% if e.ambiente_sri == 1 %}Pruebas{% else %}Producción{% endif %}</td>
+<td class="px-6 py-4 text-right"><a href="{% url 'empresas:editar' e.pk %}" class="mr-3 font-semibold text-blue-600">Editar</a><a href="{% url 'empresas:eliminar' e.pk %}" class="font-semibold text-red-600">Eliminar</a></td>
+</tr>
+{% empty %}<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500">No existen empresas registradas.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}
