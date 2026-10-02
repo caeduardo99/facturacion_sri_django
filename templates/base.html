@@ -1,1 +1,26 @@
-<!doctype html><html lang='es'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>{% block title %}FacturaEC{% endblock %}</title><link rel='stylesheet' href='/static/css/app.css'></head><body><header><a class='brand' href='/'>Factura<span>EC</span></a><nav><a href='/'>Dashboard</a><a href='/clientes/'>Clientes</a><a href='/productos/'>Productos</a><a href='/facturacion/'>Facturación</a><a href='/empresas/'>Empresas</a><a href='/accounts/logout/'>Salir</a></nav></header><main class='container'>{% block content %}{% endblock %}</main></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}FacturaEC{% endblock %}</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{brand:{50:'#eff6ff',100:'#dbeafe',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8'}}}}}</script>
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 antialiased">
+<div class="min-h-screen lg:flex">
+<aside class="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900 text-white">
+<div class="flex h-20 items-center px-6 border-b border-slate-800"><a href="/" class="text-2xl font-extrabold">Factura<span class="text-cyan-400">EC</span></a></div>
+<nav class="flex-1 px-4 py-6 space-y-1">
+<a href="/" class="sidebar-link">Dashboard</a><a href="/empresas/" class="sidebar-link">Empresas</a><a href="/clientes/" class="sidebar-link">Clientes</a><a href="/productos/" class="sidebar-link">Productos</a><a href="/facturacion/" class="sidebar-link">Facturación</a><a href="/reportes/" class="sidebar-link">Reportes</a>
+</nav>
+<div class="p-4 border-t border-slate-800"><a href="/accounts/logout/" class="sidebar-link">Cerrar sesión</a></div>
+</aside>
+<div class="flex-1 min-w-0">
+<header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-5 sm:px-8">
+<div><p class="text-xs sm:text-sm text-slate-500">Sistema de facturación electrónica</p><h2 class="font-semibold text-slate-900">{% block header_title %}Panel principal{% endblock %}</h2></div>
+<div class="flex items-center gap-3"><span class="hidden sm:inline text-sm text-slate-500">{{ request.user.username }}</span><div class="h-9 w-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold">{{ request.user.username|first|upper }}</div></div>
+</header>
+<main class="p-5 sm:p-8 max-w-7xl mx-auto">{% block content %}{% endblock %}</main>
+</div></div>
+</body></html>
