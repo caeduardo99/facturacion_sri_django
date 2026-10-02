@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+.env
+*.sqlite3
+# Django
+staticfiles/
+media/
+# IDE
+.vscode/
+.idea/
+# Secrets / certificates
+*.p12
+*.pfx
+*.pem
+*.key
+# OS
+.DS_Store
+Thumbs.db
