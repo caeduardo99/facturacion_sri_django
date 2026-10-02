@@ -28,8 +28,7 @@
 <div class="mt-6 flex justify-end"><button class="rounded-xl bg-emerald-600 px-7 py-3 font-semibold text-white">Guardar factura</button></div>
 </form>
 <script>
-const productos={{ productos|json_script:"productos-data" }};
-const data=JSON.parse(document.getElementById("productos-data").textContent);
+const data={{ productos_data|safe }};
 const tbody=document.getElementById("detalle");
 function money(n){return "$"+n.toFixed(2)}
 function recalc(){let sub=0,iva=0;tbody.querySelectorAll("tr").forEach(row=>{const p=data.find(x=>String(x.id)===row.querySelector(".producto").value);if(!p)return;const q=parseFloat(row.querySelector(".cantidad").value)||0;const base=q*parseFloat(p.precio);const tax=base*(parseFloat(p.iva)||0)/100;row.querySelector(".precio").textContent=money(parseFloat(p.precio));row.querySelector(".iva-linea").textContent=money(tax);row.querySelector(".total-linea").textContent=money(base+tax);sub+=base;iva+=tax;});document.getElementById("subtotal").textContent=money(sub);document.getElementById("iva").textContent=money(iva);document.getElementById("total").textContent=money(sub+iva)}
