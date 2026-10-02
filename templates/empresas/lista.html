@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<h1>Empresas</h1><div class='table'><div class='row head'><span>RUC</span><span>Razón social</span></div>{% for e in empresas %}<div class='row'><span>{{ e.ruc }}</span><span>{{ e.razon_social }}</span></div>{% empty %}<p>No existen empresas registradas.</p>{% endfor %}</div>{% endblock %}
