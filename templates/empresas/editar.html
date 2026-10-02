@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Editar empresa | FacturaEC{% endblock %}
+{% block header_title %}Editar empresa{% endblock %}
+{% block content %}
+<div class="mb-8"><a href="{% url 'empresas:lista' %}" class="text-sm font-medium text-blue-600">← Volver a empresas</a><h1 class="mt-4 text-3xl font-bold">Editar empresa</h1></div>
+<div class="max-w-4xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+{% if error %}<div class="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</div>{% endif %}
+<form method="post">{% csrf_token %}<div class="grid gap-5 md:grid-cols-2">
+<div><label class="text-sm font-semibold">RUC</label><input name="ruc" id="ruc" value="{{ empresa.ruc|default:'' }}" maxlength="13" required class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Razón social</label><input name="razon_social" id="razon_social" value="{{ empresa.razon_social|default:'' }}" required class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Nombre comercial</label><input name="nombre_comercial" id="nombre_comercial" value="{{ empresa.nombre_comercial|default:'' }}" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Dirección matriz</label><input name="direccion_matriz" id="direccion_matriz" value="{{ empresa.direccion_matriz|default:'' }}" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Ambiente SRI</label><select name="ambiente_sri" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"><option value="1" {% if empresa.ambiente_sri|default:1 == 1 %}selected{% endif %}>Pruebas</option><option value="2" {% if empresa.ambiente_sri == 2 %}selected{% endif %}>Producción</option></select></div>
+<div class="flex items-center gap-3 pt-8"><input type="checkbox" name="obligado_contabilidad" id="obligado" {% if empresa.obligado_contabilidad %}checked{% endif %} class="h-5 w-5"><label for="obligado" class="text-sm font-semibold">Obligado a llevar contabilidad</label></div>
+<div class="md:col-span-2"><label class="text-sm font-semibold">Ruta del certificado digital (.p12/.pfx)</label><input name="certificado_path" value="{{ empresa.certificado_path|default:'' }}" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Contraseña del certificado</label><input type="password" name="certificado_password" placeholder="{% if empresa %}Dejar vacío para conservar la actual{% endif %}" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+</div><div class="mt-7 flex justify-end gap-3"><a href="{% url 'empresas:lista' %}" class="rounded-xl border border-slate-300 px-6 py-3 font-semibold text-slate-700">Cancelar</a><button class="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white">Guardar cambios</button></div></form></div>
+{% endblock %}
