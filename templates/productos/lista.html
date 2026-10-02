@@ -1,1 +1,15 @@
-{% extends 'base.html' %}{% block content %}<div class='page-head'><h1>Productos</h1></div><div class='table'><div class='row head'><span>Código</span><span>Producto</span><span>Precio</span></div>{% for p in productos %}<div class='row'><span>{{ p.codigo }}</span><span>{{ p.nombre }}</span><span>${{ p.precio }}</span></div>{% empty %}<p>No existen productos registrados.</p>{% endfor %}</div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Productos | FacturaEC{% endblock %}
+{% block header_title %}Productos{% endblock %}
+{% block content %}
+<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+<div><h1 class="text-3xl font-bold text-slate-900">Productos</h1><p class="mt-1 text-slate-500">Administra los productos y servicios que utilizarás en tus comprobantes.</p></div>
+<a href="{% url 'productos:nuevo' %}" class="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">Nuevo producto</a>
+</div>
+<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm"><table class="min-w-full text-left text-sm">
+<thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-6 py-4">Código</th><th class="px-6 py-4">Producto</th><th class="px-6 py-4">Precio</th><th class="px-6 py-4">IVA</th><th class="px-6 py-4">Stock</th><th class="px-6 py-4 text-right">Acciones</th></tr></thead>
+<tbody class="divide-y divide-slate-100">
+{% for p in productos %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 font-medium">{{ p.codigo }}</td><td class="px-6 py-4">{{ p.nombre }}</td><td class="px-6 py-4">$ {{ p.precio|floatformat:2 }}</td><td class="px-6 py-4">{{ p.porcentaje_iva }}%</td><td class="px-6 py-4">{{ p.stock }}</td><td class="px-6 py-4 text-right"><a href="{% url 'productos:editar' p.pk %}" class="mr-3 font-semibold text-blue-600">Editar</a><a href="{% url 'productos:eliminar' p.pk %}" class="font-semibold text-red-600">Eliminar</a></td></tr>
+{% empty %}<tr><td colspan="6" class="px-6 py-12 text-center text-slate-500">No existen productos registrados.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}
