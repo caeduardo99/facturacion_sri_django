@@ -28,6 +28,7 @@ def lista(request):
 def nuevo(request):
     clientes = Cliente.objects.filter(activo=True).order_by("nombres")
     productos = Producto.objects.filter(activo=True).order_by("nombre")
+    productos_data = [{"id": p.id, "codigo": p.codigo, "nombre": p.nombre, "precio": str(p.precio), "iva": str(p.porcentaje_iva)} for p in productos]
 
     if request.method == "POST":
         cliente_id = request.POST.get("cliente")
@@ -39,7 +40,7 @@ def nuevo(request):
             cliente = Cliente.objects.get(pk=cliente_id, activo=True)
         except (Cliente.DoesNotExist, ValueError, TypeError):
             return render(request, "facturacion/nuevo.html", {
-                "clientes": clientes, "productos": productos,
+                "clientes": clientes, "productos": productos, "productos_data": productos_data,
                 "error": "Selecciona un cliente válido.",
                 "form": request.POST,
             })
