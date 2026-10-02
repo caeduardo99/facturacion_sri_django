@@ -83,53 +83,40 @@ def consultar_cedula(cedula):
     except ValueError:
         return None, "El servicio de consulta de cédulas respondió con un formato no válido."
 
-    if isinstance(data, list):
-        data = data[0] if data else None
+    # Respuesta del servicio:
+    # {
+    #   "contribuyente": {
+    #       "identificacion": "...",
+    #       "nombreComercial": "..."
+    #   }
+    # }
+    contribuyente = data.get("contribuyente") if isinstance(data, dict) else None
 
-    if not isinstance(data, dict) or not data:
+    if not isinstance(contribuyente, dict):
         return None, "No se encontró información para esa cédula."
 
-    # El servicio puede devolver los datos directamente o dentro de data/result.
-    persona = data.get("data") or data.get("result") or data
-
-    if isinstance(persona, list):
-        persona = persona[0] if persona else None
-
-    if not isinstance(persona, dict):
-        return None, "No se encontró información para esa cédula."
+    identificacion = (
+        contribuyente.get("identificacion")
+        or cedula
+    )
 
     nombre = (
-        persona.get("nombre")
-        or persona.get("nombres")
-        or persona.get("nombreCompleto")
-        or persona.get("razonSocial")
-        or persona.get("name")
+        contribuyente.get("denominacion")
+        or contribuyente.get("nombreComercial")
         or ""
     )
 
     if not nombre:
-        nombres = persona.get("nombres") or persona.get("firstname") or ""
-        apellidos = persona.get("apellidos") or persona.get("lastname") or ""
-        nombre = f"{nombres} {apellidos}".strip()
+        return None, "La consulta no devolvió el nombre del contribuyente."
 
     return {
-        "identificacion": cedula,
-        "ruc": cedula + "001",
+        "identificacion": identificacion,
+        "ruc": identificacion + "001",
         "nombres": nombre,
-        "estado": persona.get("estado") or persona.get("estadoCivil") or "",
-        "direccion": (
-            persona.get("direccion")
-            or persona.get("direccionDomicilio")
-            or persona.get("address")
-            or ""
-        ),
-        "telefono": (
-            persona.get("telefono")
-            or persona.get("celular")
-            or persona.get("phone")
-            or ""
-        ),
-        "email": persona.get("email") or persona.get("correo") or "",
+        "estado": contribuyente.get("estado") or "",
+        "direccion": contribuyente.get("direccionMatriz") or "",
+        "telefono": "",
+        "email": "",
         "fuente": "Consulta de identificación",
     }, None
 
