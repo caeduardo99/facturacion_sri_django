@@ -148,14 +148,14 @@ def transaccion_form(request, pk=None):
         nombre = request.POST.get("nombre", "").strip()
         if not codigo or not nombre:
             return render(request, "facturacion/transaccion_form.html", {
-                "transaccion": transaccion, "error": "El código y el nombre son obligatorios.", "form": request.POST,
+                "transaccion": transaccion, "error": "El código y el nombre son obligatorios.", "form": request.POST, "doc_codes": [("01", "Factura"), ("03", "Liquidación de compra"), ("04", "Nota de crédito"), ("05", "Nota de débito"), ("06", "Guía de remisión"), ("07", "Retención")],
             })
         duplicado = TipoTransaccion.objects.filter(codigo__iexact=codigo)
         if transaccion:
             duplicado = duplicado.exclude(pk=transaccion.pk)
         if duplicado.exists():
             return render(request, "facturacion/transaccion_form.html", {
-                "transaccion": transaccion, "error": "Ya existe una transacción con ese código.", "form": request.POST,
+                "transaccion": transaccion, "error": "Ya existe una transacción con ese código.", "form": request.POST, "doc_codes": [("01", "Factura"), ("03", "Liquidación de compra"), ("04", "Nota de crédito"), ("05", "Nota de débito"), ("06", "Guía de remisión"), ("07", "Retención")],
             })
         if transaccion is None:
             transaccion = TipoTransaccion()
@@ -178,7 +178,7 @@ def transaccion_form(request, pk=None):
         transaccion.activo = request.POST.get("activo") == "on"
         transaccion.save()
         return redirect("facturacion:catalogo_transacciones")
-    return render(request, "facturacion/transaccion_form.html", {"transaccion": transaccion})
+    return render(request, "facturacion/transaccion_form.html", {"transaccion": transaccion, "doc_codes": [("01", "Factura"), ("03", "Liquidación de compra"), ("04", "Nota de crédito"), ("05", "Nota de débito"), ("06", "Guía de remisión"), ("07", "Retención")]})
 
 
 @login_required
