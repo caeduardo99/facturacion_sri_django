@@ -204,8 +204,40 @@ def lista(request):
 
 @login_required
 def consulta_general(request):
-    comprobantes = Comprobante.objects.select_related("cliente").order_by("-fecha_emision", "-id")
-    return render(request, "facturacion/consulta_general.html", {"comprobantes": comprobantes})
+    comprobantes = Comprobante.objects.select_related("cliente").all()
+    desde = request.GET.get("desde", "").strip()
+    hasta = request.GET.get("hasta", "").strip()
+    tipo = request.GET.get("tipo", "").strip()
+    numero_desde = request.GET.get("numero_desde", "").strip()
+    numero_hasta = request.GET.get("numero_hasta", "").strip()
+    estado_sri = request.GET.get("estado_sri", "").strip()
+    estado_transaccion = request.GET.get("estado_transaccion", "").strip()
+    buscar = request.GET.get("buscar", "").strip()
+    if desde:
+        comprobantes = comprobantes.filter(fecha_emision__gte=desde)
+    if hasta:
+        comprobantes = comprobantes.filter(fecha_emision__lte=hasta)
+    if tipo:
+        comprobantes = comprobantes.filter(tipo=tipo)
+    if numero_desde.isdigit():
+        comprobantes = comprobantes.filter(secuencial__gte=int(numero_desde))
+    if numero_hasta.isdigit():
+        comprobantes = comprobantes.filter(secuencial__lte=int(numero_hasta))
+    if estado_sri:
+        comprobantes = comprobantes.filter(estado=estado_sri)
+    if estado_transaccion:
+        comprobantes = comprobantes.filter(estado_transaccion=estado_transaccion)
+    if buscar:
+        from django.db.models import Q
+        comprobantes = comprobantes.filter(Q(cliente__identificacion__icontains=buscar) | Q(cliente__nombres__icontains=buscar) | Q(clave_acceso__icontains=buscar) | Q(secuencial__icontains=buscar))
+    comprobantes = comprobantes.order_by("-fecha_emision", "-id")
+    return render(request, "facturacion/consulta_general.html", {
+        "comprobantes": comprobantes, "desde": desde, "hasta": hasta, "tipo": tipo,
+        "numero_desde": numero_desde, "numero_hasta": numero_hasta, "estado_sri": estado_sri,
+        "estado_transaccion": estado_transaccion, "buscar": buscar,
+        "tipos": Comprobante.TIPOS, "estados_sri": Comprobante.ESTADOS,
+        "estados_transaccion": Comprobante.ESTADOS_TRANSACCION,
+    })
 
 
 @login_required
@@ -540,8 +572,11 @@ def detalle(request, pk):
 @login_required
 def anular(request, pk):
     comprobante = get_object_or_404(Comprobante, pk=pk)
-    if request.method == "POST" and comprobante.estado == "BORRADOR":
-        comprobante.estado = "NO_AUTORIZADO"
-        comprobante.mensaje_sri = "Documento anulado antes de su envío al SRI."
-        comprobante.save(update_fields=["estado", "mensaje_sri", "actualizado"])
+    if request.method == "POST" and comprobante.estado_transaccion != "ANULADO":
+        comprobante.estado_transaccion = "ANULADO"
+        if comprobante.estado == "BORRADOR":
+            comprobante.mensaje_sri = "Transacción anulada antes de su envío al SRI."
+            comprobante.save(update_fields=["estado_transaccion", "mensaje_sri", "actualizado"])
+        else:
+            comprobante.save(update_fields=["estado_transaccion", "actualizado"])
     return redirect("facturacion:lista")
