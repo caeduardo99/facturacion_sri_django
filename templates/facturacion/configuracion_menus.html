@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Configuración de menús | FacturaEC{% endblock %}
+{% block header_title %}Configuración de menús{% endblock %}
+{% block content %}
+<div class="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div><h1 class="text-3xl font-bold">Configuración de menús</h1><p class="mt-1 text-slate-500">Relaciona el nombre visible del menú con su pantalla y el código de transacción.</p></div>
+  <a href="{% url 'facturacion:catalogo_transacciones' %}" class="rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold">Administrar transacciones</a>
+</div>
+<div class="mb-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">Esta vista usa el catálogo existente: Caption = Nombre, Cód.Pant. = Código de pantalla y Param. = Código de transacción. No borra ni modifica comprobantes guardados.</div>
+<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+<table class="min-w-full text-left text-sm">
+<thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-5 py-4">Caption</th><th class="px-5 py-4">Cód.Pant.</th><th class="px-5 py-4">Param.</th><th class="px-5 py-4">Módulo</th><th class="px-5 py-4">Estado</th><th class="px-5 py-4">Acción</th></tr></thead>
+<tbody class="divide-y divide-slate-100">
+{% for t in menus %}
+<tr class="hover:bg-slate-50">
+<td class="px-5 py-4 font-semibold">{{ t.nombre }}</td><td class="px-5 py-4 font-mono">{{ t.cod_pantalla|default:"—" }}</td><td class="px-5 py-4 font-mono">{{ t.codigo }}</td><td class="px-5 py-4">{{ t.modulo }}</td><td class="px-5 py-4">{% if t.activo %}Activo{% else %}Inactivo{% endif %}</td>
+<td class="px-5 py-4 whitespace-nowrap"><a class="font-semibold text-blue-600" href="{% url 'facturacion:transaccion_editar' t.pk %}">Configurar</a>{% if t.codigo == "FE" and t.activo and t.cod_pantalla == "FACT" %}<span class="ml-3 text-emerald-700">Abrir factura: <a class="font-semibold underline" href="{% url 'facturacion:nuevo' %}">Facturación FE</a></span>{% endif %}</td>
+</tr>
+{% empty %}<tr><td colspan="6" class="px-5 py-12 text-center text-slate-500">No hay menús configurados. Crea la transacción FE en el catálogo.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}
