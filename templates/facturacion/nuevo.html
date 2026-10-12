@@ -28,6 +28,82 @@
 <div class="mt-6 flex justify-end"><button class="rounded-xl bg-emerald-600 px-7 py-3 font-semibold text-white">Guardar factura</button></div>
 </form>
 <script>
+{{ clientes_data|json_script:"clientes-data" }}
+const clientesData = JSON.parse(document.getElementById("clientes-data").textContent);
+const buscarCliente = document.getElementById("buscarCliente");
+const clienteId = document.getElementById("clienteId");
+const resultadosCliente = document.getElementById("resultadosCliente");
+const clienteSeleccionado = document.getElementById("clienteSeleccionado");
+
+function seleccionarCliente(cliente) {
+  clienteId.value = cliente.id;
+  buscarCliente.value = cliente.identificacion + " - " + cliente.nombres;
+  resultadosCliente.classList.add("hidden");
+  clienteSeleccionado.textContent = "Cliente seleccionado: " + cliente.nombres + " (" + cliente.identificacion + ")";
+  clienteSeleccionado.classList.add("text-emerald-700");
+}
+
+function buscarClientes() {
+  const texto = buscarCliente.value.trim().toLocaleLowerCase();
+  clienteId.value = "";
+  clienteSeleccionado.textContent = "Busca por identificación o nombre y selecciona un resultado.";
+  clienteSeleccionado.classList.remove("text-emerald-700");
+  resultadosCliente.replaceChildren();
+
+  if (!texto) {
+    resultadosCliente.classList.add("hidden");
+    return;
+  }
+
+  const coincidencias = clientesData
+    .filter(c => (String(c.identificacion) + " " + c.nombres).toLocaleLowerCase().includes(texto))
+    .slice(0, 30);
+
+  if (!coincidencias.length) {
+    const vacio = document.createElement("div");
+    vacio.className = "px-4 py-3 text-sm text-slate-500";
+    vacio.textContent = "No se encontraron clientes.";
+    resultadosCliente.appendChild(vacio);
+  } else {
+    coincidencias.forEach(cliente => {
+      const boton = document.createElement("button");
+      boton.type = "button";
+      boton.className = "block w-full border-b border-slate-100 px-4 py-3 text-left hover:bg-blue-50";
+      const nombre = document.createElement("div");
+      nombre.className = "font-semibold text-slate-800";
+      nombre.textContent = cliente.nombres;
+      const identificacion = document.createElement("div");
+      identificacion.className = "mt-1 text-xs text-slate-500";
+      identificacion.textContent = cliente.identificacion;
+      boton.append(nombre, identificacion);
+      boton.addEventListener("click", () => seleccionarCliente(cliente));
+      resultadosCliente.appendChild(boton);
+    });
+  }
+  resultadosCliente.classList.remove("hidden");
+}
+
+buscarCliente.addEventListener("input", buscarClientes);
+buscarCliente.addEventListener("focus", buscarClientes);
+buscarCliente.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !resultadosCliente.classList.contains("hidden")) {
+    const primero = resultadosCliente.querySelector("button");
+    if (primero) {
+      event.preventDefault();
+      primero.click();
+    }
+  }
+});
+document.addEventListener("click", event => {
+  if (!resultadosCliente.contains(event.target) && event.target !== buscarCliente) {
+    resultadosCliente.classList.add("hidden");
+  }
+});
+if (clienteId.value) {
+  const clienteActual = clientesData.find(c => String(c.id) === clienteId.value);
+  if (clienteActual) seleccionarCliente(clienteActual);
+}
+
 {{ productos_data|json_script:"productos-data" }}
 const data=JSON.parse(document.getElementById("productos-data").textContent);
 const tbody=document.getElementById("detalle");
