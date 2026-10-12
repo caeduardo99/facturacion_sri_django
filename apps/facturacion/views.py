@@ -386,14 +386,22 @@ def descargar_ride(request, pk):
 
 @login_required
 def nuevo(request):
+    configuracion_fe = TipoTransaccion.objects.filter(codigo__iexact="FE", activo=True).first()
     clientes = Cliente.objects.filter(activo=True).only("id", "identificacion", "nombres").order_by("nombres")
     clientes_data = [{"id": c.id, "identificacion": c.identificacion, "nombres": c.nombres} for c in clientes]
     productos = Producto.objects.filter(activo=True).order_by("nombre")
     productos_data = [{"id": p.id, "codigo": p.codigo, "nombre": p.nombre, "precio": str(p.precio), "iva": str(p.porcentaje_iva)} for p in productos]
 
     if request.method == "POST":
+        if not configuracion_fe:
+            return render(request, "facturacion/nuevo.html", {
+                "clientes": clientes, "clientes_data": clientes_data, "productos": productos, "productos_data": productos_data,
+                "error": "No existe una transacción FE activa. Configúrala en Catálogo de transacciones antes de facturar.",
+                "form": request.POST,
+            })
         cliente_id = request.POST.get("cliente")
-        tipo = request.POST.get("tipo", "01")
+        tipo = configuracion_fe.codigo_documento_sri or "01"
+        ambiente_sri = configuracion_fe.ambiente_sri or 1
         establecimiento = request.POST.get("establecimiento", "001").strip()
         punto_emision = request.POST.get("punto_emision", "001").strip()
 
@@ -477,7 +485,7 @@ def nuevo(request):
                 total=total,
                 estado="BORRADOR",
             )
-            comprobante.clave_acceso = _clave_acceso(comprobante.fecha_emision, comprobante.tipo, empresa.ruc, empresa.ambiente_sri, establecimiento, punto_emision, secuencial)
+            comprobante.clave_acceso = _clave_acceso(comprobante.fecha_emision, comprobante.tipo, empresa.ruc, ambiente_sri, establecimiento, punto_emision, secuencial)
             comprobante.save(update_fields=["clave_acceso", "actualizado"])
 
             for producto, cantidad, base, impuesto, total_linea in items:
@@ -498,7 +506,7 @@ def nuevo(request):
                 forma_pago=request.POST.get("forma_pago", "20"),
                 total=total,
             )
-            comprobante.xml_generado = _generar_xml_factura(comprobante, empresa)
+            comprobante.xml_generado = _generar_xml_factura(comprobante, empresa, ambiente_sri=ambiente_sri)
             comprobante.save(update_fields=["xml_generado", "actualizado"])
 
         return redirect("facturacion:lista")
@@ -508,6 +516,7 @@ def nuevo(request):
         "clientes_data": clientes_data,
         "productos": productos,
         "productos_data": productos_data,
+        "configuracion_fe": configuracion_fe,
     })
 
 
