@@ -272,8 +272,17 @@ def descargar_ride(request, pk):
     empresa = Empresa.objects.filter(activo=True).order_by("id").first()
     if not empresa:
         raise Http404("No existe una empresa emisora activa para generar el RIDE.")
-    configuracion_fe = TipoTransaccion.objects.filter(codigo__iexact="FE", activo=True).first()
-    ambiente_ride = configuracion_fe.ambiente_sri if configuracion_fe else empresa.ambiente_sri
+    # El XML conserva el ambiente utilizado al crear el comprobante. Así el RIDE
+    # no depende de que la configuración FE siga siendo la seleccionada por defecto.
+    ambiente_ride = empresa.ambiente_sri
+    if comprobante.xml_generado:
+        try:
+            raiz_xml = ET.fromstring(comprobante.xml_generado)
+            nodo_ambiente = raiz_xml.find("./infoTributaria/ambiente")
+            if nodo_ambiente is not None and nodo_ambiente.text:
+                ambiente_ride = int(nodo_ambiente.text)
+        except (ET.ParseError, TypeError, ValueError):
+            pass
 
     buffer = BytesIO()
     numero = f"{comprobante.establecimiento}-{comprobante.punto_emision}-{comprobante.secuencial:09d}"
