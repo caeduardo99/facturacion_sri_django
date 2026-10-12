@@ -186,6 +186,18 @@ def configuracion_menus(request):
 
 @login_required
 def catalogo_transacciones(request):
+    # Asegurar que el módulo de Ofertas también esté registrado en el catálogo.
+    TipoTransaccion.objects.get_or_create(
+        codigo="OF",
+        defaults={
+            "nombre": "Ofertas",
+            "descripcion": "Registro y gestión de ofertas comerciales",
+            "cod_pantalla": "OF",
+            "modulo": "Ofertas",
+            "documento_electronico": False,
+            "activo": True,
+        },
+    )
     q = request.GET.get("q", "").strip()
     transacciones = TipoTransaccion.objects.all()
     if q:
