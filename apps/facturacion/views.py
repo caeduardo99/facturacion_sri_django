@@ -317,7 +317,7 @@ def descargar_ride(request, pk):
     story.append(parte_inferior)
     doc.build(story)
     response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="RIDE_{numero.replace("-", "_")}.pdf"'
+    response["Content-Disposition"] = f'inline; filename="RIDE_{numero.replace("-", "_")}.pdf"'
     return response
 
 
