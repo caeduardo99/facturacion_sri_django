@@ -682,6 +682,7 @@ def nuevo(request):
 
         return redirect("facturacion:lista")
 
+    ofertas_disponibles = Oferta.objects.filter(estado="APROBADA").select_related("cliente").order_by("-id") if configuracion_fe and configuracion_fe.importacion_requerida else Oferta.objects.none()
     return render(request, "facturacion/nuevo.html", {
         "clientes": clientes,
         "clientes_data": clientes_data,
@@ -689,6 +690,7 @@ def nuevo(request):
         "productos_data": productos_data,
         "configuracion_fe": configuracion_fe,
         "codigo_transaccion": codigo_transaccion,
+        "ofertas_disponibles": ofertas_disponibles,
     })
 
 
