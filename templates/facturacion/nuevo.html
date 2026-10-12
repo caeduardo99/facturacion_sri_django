@@ -4,7 +4,7 @@
 {% block content %}
 <div class="mb-8"><a href="{% url 'facturacion:lista' %}" class="text-sm font-medium text-blue-600">← Volver a facturación</a><h1 class="mt-4 text-3xl font-bold">{% if configuracion_fe %}{{ configuracion_fe.nombre }}{% else %}Nueva factura{% endif %}</h1><p class="mt-1 text-slate-500">Transacción: <span class="font-semibold">{{ codigo_transaccion|default:'FE' }}</span>. Crea un comprobante y calcula automáticamente sus valores.</p></div>
 {% if error %}<div class="mb-6 max-w-6xl rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</div>{% endif %}
-<form method="post" id="facturaForm" class="max-w-6xl">{% csrf_token %}<input type="hidden" name="codigo_transaccion" value="{{ codigo_transaccion|default:'FE' }}">
+<form method="post" id="facturaForm" class="max-w-6xl">{% csrf_token %}<input type="hidden" name="codigo_transaccion" value="{{ codigo_transaccion|default:'FE' }}"><input type="hidden" name="oferta_id" id="ofertaId" value="">
 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 <h2 class="text-lg font-bold">Datos del comprobante</h2>
 <div class="mt-5 grid gap-5 md:grid-cols-4">
@@ -15,6 +15,10 @@
 <div><label class="text-sm font-semibold">Punto de emisión</label><input value="{{ configuracion_fe.punto_emision|default:'001' }}" readonly class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"><p class="mt-1 text-xs text-slate-500">Configurado para {{ codigo_transaccion }}.</p></div>
 </div></div>
 
+{% if configuracion_fe.importacion_requerida %}
+<div class="mb-5 flex justify-end"><button type="button" id="abrirImportarOferta" class="rounded-xl border border-blue-300 bg-blue-50 px-5 py-3 font-semibold text-blue-700">Importar oferta</button></div>
+<div id="modalImportarOferta" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4"><div class="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl"><div class="flex items-center justify-between"><h2 class="text-xl font-bold">Importar oferta</h2><button type="button" id="cerrarImportarOferta" class="text-2xl text-slate-500">&times;</button></div><p class="mt-2 text-sm text-slate-500">Selecciona una oferta aprobada. Se cargarán el cliente y los productos.</p><div class="mt-5 max-h-80 space-y-2 overflow-y-auto">{% for o in ofertas_disponibles %}<button type="button" class="elegirOferta flex w-full items-center justify-between rounded-xl border p-4 text-left hover:bg-blue-50" data-id="{{ o.id }}"><span><strong>{{ o.numero }}</strong><span class="block text-sm text-slate-500">{{ o.cliente.nombres }}</span></span><strong>$ {{ o.total|floatformat:2 }}</strong></button>{% empty %}<p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">No hay ofertas aprobadas disponibles. Registra una en el módulo Ofertas.</p>{% endfor %}</div><div class="mt-5 flex justify-end"><button type="button" id="cancelarImportarOferta" class="rounded-xl border px-4 py-2">Cerrar</button></div></div></div>
+{% endif %}
 <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 <div class="flex items-center justify-between"><div><h2 class="text-lg font-bold">Detalle</h2><p class="text-sm text-slate-500">Agrega los productos o servicios.</p></div><button type="button" id="agregar" class="rounded-xl bg-blue-600 px-4 py-2 font-semibold text-white">+ Agregar producto</button></div>
 <div class="mt-5 overflow-x-auto"><table class="min-w-full"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="px-3 py-3">Producto</th><th class="px-3 py-3 w-32">Cantidad</th><th class="px-3 py-3 w-36">Precio</th><th class="px-3 py-3 w-32">IVA</th><th class="px-3 py-3 w-36">Total</th><th></th></tr></thead><tbody id="detalle"></tbody></table></div>
@@ -111,5 +115,34 @@ function money(n){return "$"+n.toFixed(2)}
 function recalc(){let sub=0,iva=0;tbody.querySelectorAll("tr").forEach(row=>{const p=data.find(x=>String(x.id)===row.querySelector(".producto").value);if(!p)return;const q=parseFloat(row.querySelector(".cantidad").value)||0;const base=q*parseFloat(p.precio);const tax=base*(parseFloat(p.iva)||0)/100;row.querySelector(".precio").textContent=money(parseFloat(p.precio));row.querySelector(".iva-linea").textContent=money(tax);row.querySelector(".total-linea").textContent=money(base+tax);sub+=base;iva+=tax;});document.getElementById("subtotal").textContent=money(sub);document.getElementById("iva").textContent=money(iva);document.getElementById("total").textContent=money(sub+iva)}
 function addRow(){const row=document.createElement("tr");row.className="border-b";let opts='<option value="">Seleccione...</option>';data.forEach(p=>opts+=`<option value="${p.id}">${p.codigo} - ${p.nombre}</option>`);row.innerHTML=`<td class="px-3 py-3"><select name="producto_id" class="producto w-full rounded-lg border border-slate-300 px-3 py-2" required>${opts}</select></td><td class="px-3 py-3"><input name="cantidad" type="number" step="0.0001" min="0.0001" value="1" class="cantidad w-full rounded-lg border border-slate-300 px-3 py-2"></td><td class="px-3 py-3 precio">$0.00</td><td class="px-3 py-3 iva-linea">$0.00</td><td class="px-3 py-3 total-linea font-semibold">$0.00</td><td class="px-3 py-3"><button type="button" class="quitar text-red-600 font-semibold">Quitar</button></td>`;tbody.appendChild(row);row.querySelector(".producto").addEventListener("change",recalc);row.querySelector(".cantidad").addEventListener("input",recalc);row.querySelector(".quitar").addEventListener("click",()=>{row.remove();recalc()});}
 document.getElementById("agregar").addEventListener("click",addRow);addRow();
+const modalOferta=document.getElementById("modalImportarOferta");
+if(modalOferta){
+  const closeOferta=()=>{modalOferta.classList.add("hidden");modalOferta.classList.remove("flex")};
+  const openOferta=()=>{modalOferta.classList.remove("hidden");modalOferta.classList.add("flex")};
+  document.getElementById("abrirImportarOferta").addEventListener("click",openOferta);
+  document.getElementById("cerrarImportarOferta").addEventListener("click",closeOferta);
+  document.getElementById("cancelarImportarOferta").addEventListener("click",closeOferta);
+  if({{ ofertas_disponibles|length }} > 0) openOferta();
+  modalOferta.querySelectorAll(".elegirOferta").forEach(btn=>btn.addEventListener("click",async()=>{
+    try{
+      const resp=await fetch("/facturacion/ofertas/"+btn.dataset.id+"/json/");
+      if(!resp.ok) throw new Error("No se pudo cargar la oferta.");
+      const oferta=await resp.json();
+      const cliente=clientesData.find(c=>String(c.id)===String(oferta.cliente_id));
+      if(cliente) seleccionarCliente(cliente);
+      tbody.replaceChildren();
+      oferta.items.forEach(item=>{
+        addRow();
+        const row=tbody.lastElementChild;
+        row.querySelector(".producto").value=String(item.producto_id);
+        row.querySelector(".cantidad").value=item.cantidad;
+      });
+      recalc();
+      document.getElementById("ofertaId").value=String(oferta.id);
+      document.getElementById("abrirImportarOferta").textContent="Oferta importada: "+oferta.numero;
+      closeOferta();
+    }catch(e){alert(e.message||"No se pudo importar la oferta.");}
+  }));
+}
 </script>
 {% endblock %}
