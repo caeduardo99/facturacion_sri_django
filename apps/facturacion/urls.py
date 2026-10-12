@@ -1,11 +1,13 @@
 from django.urls import path
-from .views import lista, nuevo, detalle, anular, consulta_general, descargar_xml, descargar_ride, catalogo_transacciones, transaccion_form, transaccion_eliminar, configuracion_menus, cambiar_estado_transaccion, ofertas, oferta_detalle_json
+from .views import lista, nuevo, detalle, anular, consulta_general, descargar_xml, descargar_ride, catalogo_transacciones, transaccion_form, transaccion_eliminar, configuracion_menus, cambiar_estado_transaccion, ofertas, oferta_detalle_json, cambiar_estado_oferta
 
 app_name = "facturacion"
 
 urlpatterns = [
     path("", lista, name="lista"),
     path("ofertas/", ofertas, name="ofertas"),
+    path("ofertas/<int:pk>/editar/", ofertas, name="oferta_editar"),
+    path("ofertas/<int:pk>/estado/", cambiar_estado_oferta, name="cambiar_estado_oferta"),
     path("ofertas/<int:pk>/json/", oferta_detalle_json, name="oferta_detalle_json"),
     path("nuevo/", nuevo, name="nuevo"),
     path("consulta-general/", consulta_general, name="consulta_general"),
