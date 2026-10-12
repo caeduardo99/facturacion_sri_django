@@ -128,15 +128,32 @@ def _generar_xml_factura(comprobante, empresa, ambiente_sri=None):
 
 
 @login_required
-def ofertas(request):
+def ofertas(request, pk=None):
+    oferta_editar = get_object_or_404(Oferta.objects.select_related("cliente").prefetch_related("detalles__producto"), pk=pk) if pk else None
     clientes = Cliente.objects.filter(activo=True).order_by("nombres")
     productos = Producto.objects.filter(activo=True).order_by("nombre")
+    productos_data = [{"id": p.id, "codigo": p.codigo, "nombre": p.nombre, "precio": str(p.precio), "iva": str(p.porcentaje_iva)} for p in productos]
+
     if request.method == "POST":
+        accion = request.POST.get("accion", "guardar")
+        if accion == "estado":
+            oferta_estado = get_object_or_404(Oferta, pk=request.POST.get("oferta_id"))
+            nuevo_estado = request.POST.get("estado", "")
+            estados_validos = {estado[0] for estado in Oferta.ESTADOS}
+            if nuevo_estado in estados_validos:
+                if oferta_estado.estado != "FACTURADA" and oferta_estado.estado != "ANULADA":
+                    oferta_estado.estado = nuevo_estado
+                    oferta_estado.save(update_fields=["estado", "actualizado"])
+            return redirect("facturacion:ofertas")
+
+        if oferta_editar and oferta_editar.estado in ("FACTURADA", "ANULADA"):
+            return redirect("facturacion:ofertas")
+
         cliente_id = request.POST.get("cliente")
         try:
             cliente = Cliente.objects.get(pk=cliente_id, activo=True)
         except (Cliente.DoesNotExist, ValueError, TypeError):
-            return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos_data": [{"id": p.id, "codigo": p.codigo, "nombre": p.nombre, "precio": str(p.precio), "iva": str(p.porcentaje_iva)} for p in productos], "error": "Selecciona un cliente válido."})
+            return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos_data": productos_data, "ofertas": Oferta.objects.select_related("cliente").all(), "oferta_editar": oferta_editar, "error": "Selecciona un cliente válido."})
         ids = request.POST.getlist("producto_id")
         cantidades = request.POST.getlist("cantidad")
         items = []
@@ -156,16 +173,45 @@ def ofertas(request):
             subtotal += base
             iva_total += impuesto
         if not items:
-            return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos_data": [{"id": p.id, "codigo": p.codigo, "nombre": p.nombre, "precio": str(p.precio), "iva": str(p.porcentaje_iva)} for p in productos], "error": "Agrega al menos un producto a la oferta."})
+            return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos_data": productos_data, "ofertas": Oferta.objects.select_related("cliente").all(), "oferta_editar": oferta_editar, "error": "Agrega al menos un producto a la oferta."})
         with transaction.atomic():
-            oferta = Oferta.objects.create(cliente=cliente, subtotal=subtotal, iva=iva_total, total=subtotal + iva_total)
-            oferta.estado = "APROBADA"
-            oferta.save(update_fields=["estado", "actualizado"])
+            if oferta_editar:
+                oferta_editar.cliente = cliente
+                oferta_editar.subtotal = subtotal
+                oferta_editar.iva = iva_total
+                oferta_editar.total = subtotal + iva_total
+                oferta_editar.save(update_fields=["cliente", "subtotal", "iva", "total", "actualizado"])
+                oferta_editar.detalles.all().delete()
+                oferta = oferta_editar
+            else:
+                oferta = Oferta.objects.create(cliente=cliente, subtotal=subtotal, iva=iva_total, total=subtotal + iva_total)
+                oferta.estado = "APROBADA"
+                oferta.save(update_fields=["estado", "actualizado"])
             for producto, cantidad, base, impuesto, total_linea in items:
                 DetalleOferta.objects.create(oferta=oferta, producto=producto, codigo=producto.codigo, descripcion=producto.nombre, cantidad=cantidad, precio_unitario=producto.precio, subtotal=base, iva=impuesto, total=total_linea)
         return redirect("facturacion:ofertas")
+
     lista_ofertas = Oferta.objects.select_related("cliente").prefetch_related("detalles").all()
-    return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos_data": [{"id": p.id, "codigo": p.codigo, "nombre": p.nombre, "precio": str(p.precio), "iva": str(p.porcentaje_iva)} for p in productos], "ofertas": lista_ofertas})
+    detalles_edicion = []
+    if oferta_editar:
+        detalles_edicion = [{"producto_id": d.producto_id, "cantidad": str(d.cantidad)} for d in oferta_editar.detalles.all()]
+    return render(request, "facturacion/ofertas.html", {
+        "clientes": clientes, "productos_data": productos_data, "ofertas": lista_ofertas,
+        "oferta_editar": oferta_editar, "detalles_edicion": detalles_edicion,
+    })
+
+
+@login_required
+def cambiar_estado_oferta(request, pk):
+    if request.method != "POST":
+        return redirect("facturacion:ofertas")
+    oferta = get_object_or_404(Oferta, pk=pk)
+    nuevo_estado = request.POST.get("estado", "")
+    estados_validos = {estado[0] for estado in Oferta.ESTADOS}
+    if oferta.estado not in ("FACTURADA", "ANULADA") and nuevo_estado in estados_validos:
+        oferta.estado = nuevo_estado
+        oferta.save(update_fields=["estado", "actualizado"])
+    return redirect("facturacion:ofertas")
 
 
 @login_required
