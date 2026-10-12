@@ -682,7 +682,18 @@ def nuevo(request):
 
         return redirect("facturacion:lista")
 
-    ofertas_disponibles = Oferta.objects.filter(estado="APROBADA").select_related("cliente").order_by("-id") if configuracion_fe and configuracion_fe.importacion_requerida else Oferta.objects.none()
+    ofertas_disponibles = Oferta.objects.none()
+    filtro_fecha_desde = request.GET.get("fecha_desde", "").strip()
+    filtro_fecha_hasta = request.GET.get("fecha_hasta", "").strip()
+    filtro_cliente = request.GET.get("cliente_oferta", "").strip()
+    if configuracion_fe and configuracion_fe.importacion_requerida:
+        ofertas_disponibles = Oferta.objects.filter(estado="APROBADA").select_related("cliente").order_by("-fecha", "-id")
+        if filtro_fecha_desde:
+            ofertas_disponibles = ofertas_disponibles.filter(fecha__gte=filtro_fecha_desde)
+        if filtro_fecha_hasta:
+            ofertas_disponibles = ofertas_disponibles.filter(fecha__lte=filtro_fecha_hasta)
+        if filtro_cliente:
+            ofertas_disponibles = ofertas_disponibles.filter(cliente_id=filtro_cliente)
     return render(request, "facturacion/nuevo.html", {
         "clientes": clientes,
         "clientes_data": clientes_data,
@@ -691,6 +702,10 @@ def nuevo(request):
         "configuracion_fe": configuracion_fe,
         "codigo_transaccion": codigo_transaccion,
         "ofertas_disponibles": ofertas_disponibles,
+        "clientes_filtro_oferta": clientes,
+        "filtro_fecha_desde": filtro_fecha_desde,
+        "filtro_fecha_hasta": filtro_fecha_hasta,
+        "filtro_cliente_oferta": filtro_cliente,
     })
 
 
