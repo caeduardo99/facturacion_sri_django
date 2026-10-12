@@ -200,9 +200,7 @@ def descargar_ride(request, pk):
     barcode_cell = P("CLAVE DE ACCESO", "RideBold")
     if clave:
         barcode = Code128(clave, barHeight=12*mm, barWidth=0.34*mm, humanReadable=True)
-        dibujo = Drawing(75*mm, 18*mm)
-        dibujo.add(barcode)
-        barcode_cell = [barcode_cell, Spacer(1, 2*mm), dibujo]
+        barcode_cell = [barcode_cell, Spacer(1, 2*mm), barcode]
 
     datos_tributarios = [
         [P(f"<b>R.U.C.:</b> {empresa.ruc}", "RideSection")],
