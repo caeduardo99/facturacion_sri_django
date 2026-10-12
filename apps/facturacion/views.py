@@ -298,6 +298,7 @@ def cambiar_estado_transaccion(request, pk):
 @login_required
 def consulta_general(request):
     comprobantes = Comprobante.objects.select_related("cliente").all()
+    ofertas = Oferta.objects.select_related("cliente").all()
     desde = request.GET.get("desde", "").strip()
     hasta = request.GET.get("hasta", "").strip()
     tipo = request.GET.get("tipo", "").strip()
@@ -308,30 +309,38 @@ def consulta_general(request):
     buscar = request.GET.get("buscar", "").strip()
     if desde:
         comprobantes = comprobantes.filter(fecha_emision__gte=desde)
+        ofertas = ofertas.filter(fecha__gte=desde)
     if hasta:
         comprobantes = comprobantes.filter(fecha_emision__lte=hasta)
+        ofertas = ofertas.filter(fecha__lte=hasta)
     if tipo:
         comprobantes = comprobantes.filter(tipo=tipo)
+        ofertas = Oferta.objects.none()
     if numero_desde.isdigit():
         comprobantes = comprobantes.filter(secuencial__gte=int(numero_desde))
+        ofertas = ofertas.filter(id__gte=int(numero_desde))
     if numero_hasta.isdigit():
         comprobantes = comprobantes.filter(secuencial__lte=int(numero_hasta))
+        ofertas = ofertas.filter(id__lte=int(numero_hasta))
     if estado_sri:
         comprobantes = comprobantes.filter(estado=estado_sri)
+        ofertas = Oferta.objects.none()
     if estado_transaccion:
         comprobantes = comprobantes.filter(estado_transaccion=estado_transaccion)
+        ofertas = ofertas.filter(estado=estado_transaccion)
     if buscar:
         from django.db.models import Q
         comprobantes = comprobantes.filter(Q(cliente__identificacion__icontains=buscar) | Q(cliente__nombres__icontains=buscar) | Q(clave_acceso__icontains=buscar) | Q(secuencial__icontains=buscar))
+        ofertas = ofertas.filter(Q(cliente__identificacion__icontains=buscar) | Q(cliente__nombres__icontains=buscar) | Q(numero__icontains=buscar) | Q(id__icontains=buscar))
     comprobantes = comprobantes.order_by("-fecha_emision", "-id")
+    ofertas = ofertas.order_by("-fecha", "-id")
     return render(request, "facturacion/consulta_general.html", {
-        "comprobantes": comprobantes, "desde": desde, "hasta": hasta, "tipo": tipo,
+        "comprobantes": comprobantes, "ofertas": ofertas, "desde": desde, "hasta": hasta, "tipo": tipo,
         "numero_desde": numero_desde, "numero_hasta": numero_hasta, "estado_sri": estado_sri,
         "estado_transaccion": estado_transaccion, "buscar": buscar,
         "tipos": Comprobante.TIPOS, "estados_sri": Comprobante.ESTADOS,
         "estados_transaccion": Comprobante.ESTADOS_TRANSACCION,
     })
-
 
 @login_required
 def descargar_xml(request, pk):
