@@ -190,6 +190,18 @@ def transaccion_form(request, pk=None):
         transaccion.activo = request.POST.get("activo") == "on"
         transaccion.save()
         return redirect("facturacion:catalogo_transacciones")
+    if transaccion:
+        ultimo_comprobante = Comprobante.objects.filter(
+            codigo_transaccion__iexact=transaccion.codigo,
+            establecimiento=transaccion.establecimiento,
+            punto_emision=transaccion.punto_emision,
+        ).order_by("-secuencial").first()
+        if ultimo_comprobante:
+            # Mostrar el siguiente secuencial real aunque la factura se haya creado antes
+            # de que se actualizara automáticamente el contador de la configuración.
+            transaccion.transaccion_siguiente = max(
+                transaccion.transaccion_siguiente, ultimo_comprobante.secuencial + 1
+            )
     return render(request, "facturacion/transaccion_form.html", {"transaccion": transaccion, "doc_codes": [("01", "Factura"), ("03", "Liquidación de compra"), ("04", "Nota de crédito"), ("05", "Nota de débito"), ("06", "Guía de remisión"), ("07", "Retención")]})
 
 
