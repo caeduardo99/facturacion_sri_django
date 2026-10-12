@@ -557,6 +557,7 @@ def nuevo(request):
 
             comprobante = Comprobante.objects.create(
                 tipo=tipo,
+                codigo_transaccion=configuracion_fe.codigo,
                 fecha_emision=timezone.localdate(),
                 establecimiento=establecimiento,
                 punto_emision=punto_emision,
