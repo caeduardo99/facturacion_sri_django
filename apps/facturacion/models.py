@@ -44,3 +44,38 @@ class TipoTransaccion(models.Model):
 
     def __str__(self):
         return f"{self.codigo} - {self.nombre}"
+
+
+class Oferta(models.Model):
+    ESTADOS = [("BORRADOR", "Borrador"), ("APROBADA", "Aprobada"), ("FACTURADA", "Facturada"), ("ANULADA", "Anulada")]
+    numero = models.CharField(max_length=20, unique=True, blank=True)
+    cliente = models.ForeignKey("clientes.Cliente", on_delete=models.PROTECT, related_name="ofertas")
+    fecha = models.DateField(default=__import__("django.utils.timezone", fromlist=["localdate"]).localdate)
+    estado = models.CharField(max_length=12, choices=ESTADOS, default="BORRADOR")
+    subtotal = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
+    iva = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
+    total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering = ["-id"]
+    def save(self, *args, **kwargs):
+        if not self.numero and self.pk is None:
+            super().save(*args, **kwargs)
+            self.numero = f"OF-{self.pk:06d}"
+            return super().save(update_fields=["numero", "actualizado"])
+        return super().save(*args, **kwargs)
+    def __str__(self):
+        return f"{self.numero} - {self.cliente}"
+
+
+class DetalleOferta(models.Model):
+    oferta = models.ForeignKey(Oferta, on_delete=models.CASCADE, related_name="detalles")
+    producto = models.ForeignKey("productos.Producto", on_delete=models.PROTECT)
+    codigo = models.CharField(max_length=50)
+    descripcion = models.CharField(max_length=300)
+    cantidad = models.DecimalField(max_digits=14, decimal_places=4)
+    precio_unitario = models.DecimalField(max_digits=14, decimal_places=4)
+    subtotal = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
+    iva = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
+    total = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
