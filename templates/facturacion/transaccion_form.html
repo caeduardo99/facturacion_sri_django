@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{% if transaccion %}Editar{% else %}Nueva{% endif %} transacción | FacturaEC{% endblock %}
+{% block header_title %}Catálogo de transacciones{% endblock %}
+{% block content %}
+<div class="mb-6"><a href="{% url 'facturacion:catalogo_transacciones' %}" class="text-sm font-semibold text-blue-600">← Volver al catálogo</a><h1 class="mt-3 text-3xl font-bold">{% if transaccion %}Editar transacción{% else %}Nueva transacción{% endif %}</h1></div>
+{% if error %}<div class="mb-5 rounded-xl bg-red-50 p-4 text-red-700">{{ error }}</div>{% endif %}
+<form method="post" class="max-w-5xl space-y-6">{% csrf_token %}
+<section class="rounded-2xl border border-slate-200 bg-white p-6"><h2 class="mb-5 text-lg font-bold">Datos (1) · Identificación</h2><div class="grid gap-5 md:grid-cols-2">
+{% for field,label in fields %}{% endfor %}
+<div><label class="text-sm font-semibold">Código *</label><input required maxlength="10" name="codigo" value="{{ form.codigo|default:transaccion.codigo|default:'' }}" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Nombre *</label><input required name="nombre" value="{{ form.nombre|default:transaccion.nombre|default:'' }}" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Descripción</label><input name="descripcion" value="{{ form.descripcion|default:transaccion.descripcion|default:'' }}" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Código de pantalla</label><input name="cod_pantalla" value="{{ form.cod_pantalla|default:transaccion.cod_pantalla|default:'' }}" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Módulo</label><select name="modulo" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3">{% for val in "Facturación,Inventario,Tesorería,Proveedores,Clientes,Contabilidad".split %}{% endfor %}<option {% if transaccion.modulo == 'Facturación' %}selected{% endif %}>Facturación</option><option {% if transaccion.modulo == 'Inventario' %}selected{% endif %}>Inventario</option><option {% if transaccion.modulo == 'Tesorería' %}selected{% endif %}>Tesorería</option><option {% if transaccion.modulo == 'Proveedores' %}selected{% endif %}>Proveedores</option><option {% if transaccion.modulo == 'Clientes' %}selected{% endif %}>Clientes</option><option {% if transaccion.modulo == 'Contabilidad' %}selected{% endif %}>Contabilidad</option></select></div>
+<div><label class="text-sm font-semibold">Transacción siguiente</label><input type="number" min="1" name="transaccion_siguiente" value="{{ form.transaccion_siguiente|default:transaccion.transaccion_siguiente|default:'1' }}" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Sucursal</label><input name="sucursal" value="{{ form.sucursal|default:transaccion.sucursal|default:'CUENCA' }}" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+</div></section>
+<section class="rounded-2xl border border-slate-200 bg-white p-6"><h2 class="mb-5 text-lg font-bold">Impresión y comprobante electrónico</h2><div class="grid gap-5 md:grid-cols-2">
+<div><label class="text-sm font-semibold">Librería de impresión</label><input name="libreria_impresion" value="{{ form.libreria_impresion|default:transaccion.libreria_impresion|default:'gnprintG' }}" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Librería de impresión RIDE</label><input name="libreria_ride" value="{{ form.libreria_ride|default:transaccion.libreria_ride|default:'gnprintg' }}" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"></div>
+<div><label class="text-sm font-semibold">Código documento SRI</label><select name="codigo_documento_sri" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"><option value="">No aplica</option>{% for code,label in doc_codes %}<option value="{{ code }}" {% if form.codigo_documento_sri|default:transaccion.codigo_documento_sri == code %}selected{% endif %}>{{ code }} · {{ label }}</option>{% endfor %}</select></div>
+<div><label class="text-sm font-semibold">Ambiente SRI</label><select name="ambiente_sri" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"><option value="1" {% if form.ambiente_sri|default:transaccion.ambiente_sri|default:'1' == '1' or transaccion.ambiente_sri == 1 %}selected{% endif %}>Pruebas</option><option value="2" {% if form.ambiente_sri|default:transaccion.ambiente_sri == '2' or transaccion.ambiente_sri == 2 %}selected{% endif %}>Producción</option></select></div>
+</div><div class="mt-5 grid gap-3 sm:grid-cols-2">
+<label class="flex items-center gap-3 rounded-xl border p-3"><input type="checkbox" name="documento_electronico" {% if form.documento_electronico == 'on' or transaccion.documento_electronico %}checked{% endif %}> Comprobante electrónico</label>
+<label class="flex items-center gap-3 rounded-xl border p-3"><input type="checkbox" name="utiliza_formato_estandar_xml" {% if form.utiliza_formato_estandar_xml == 'on' or transaccion.utiliza_formato_estandar_xml %}checked{% endif %}> Utiliza formato estándar XML</label>
+<label class="flex items-center gap-3 rounded-xl border p-3"><input type="checkbox" name="generacion_bloque_xml" {% if form.generacion_bloque_xml == 'on' or transaccion.generacion_bloque_xml %}checked{% endif %}> Generación en bloque de XML</label>
+<label class="flex items-center gap-3 rounded-xl border p-3"><input type="checkbox" name="seis_decimales" {% if form.seis_decimales == 'on' or transaccion.seis_decimales %}checked{% endif %}> XML con 6 decimales</label>
+<label class="flex items-center gap-3 rounded-xl border p-3"><input type="checkbox" name="importacion_requerida" {% if form.importacion_requerida == 'on' or transaccion.importacion_requerida %}checked{% endif %}> Importación de datos requerida</label>
+<label class="flex items-center gap-3 rounded-xl border p-3"><input type="checkbox" name="activo" {% if form.activo == 'on' or transaccion.activo or not transaccion %}checked{% endif %}> Activo</label>
+</div></section>
+<div class="flex justify-end gap-3"><a href="{% url 'facturacion:catalogo_transacciones' %}" class="rounded-xl border px-5 py-3">Cancelar</a><button class="rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white">Guardar transacción</button></div>
+</form>
+{% endblock %}
