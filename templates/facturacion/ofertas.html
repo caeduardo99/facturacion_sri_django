@@ -4,7 +4,12 @@
 {% block content %}
 <div class="mb-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h1 class="text-3xl font-bold">Ofertas</h1><p class="mt-1 text-slate-500">Registra ofertas y luego impórtalas a Facturación.</p></div></div>
 {% if error %}<div class="mb-5 rounded-xl bg-red-50 p-4 text-red-700">{{ error }}</div>{% endif %}
-<div class="grid gap-6 xl:grid-cols-2">
+<section class="mb-7 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+<div class="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><h2 class="text-xl font-bold">Ofertas registradas</h2><p class="text-sm text-slate-500">Consulta todas las ofertas y revisa su estado.</p></div><span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold">{{ ofertas|length }} oferta(s)</span></div>
+<div class="overflow-x-auto rounded-xl border border-slate-200"><table class="min-w-full text-left text-sm"><thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-4 py-3">Transacción</th><th class="px-4 py-3">Número</th><th class="px-4 py-3">Fecha</th><th class="px-4 py-3">Identificación</th><th class="px-4 py-3">Cliente</th><th class="px-4 py-3 text-right">Subtotal</th><th class="px-4 py-3 text-right">IVA</th><th class="px-4 py-3 text-right">Total</th><th class="px-4 py-3">Estado</th></tr></thead><tbody class="divide-y divide-slate-100">
+{% for o in ofertas %}<tr class="hover:bg-slate-50"><td class="whitespace-nowrap px-4 py-3 font-semibold">OF {{ o.id }}</td><td class="whitespace-nowrap px-4 py-3">{{ o.numero }}</td><td class="whitespace-nowrap px-4 py-3">{{ o.fecha|date:"d/m/Y" }}</td><td class="whitespace-nowrap px-4 py-3">{{ o.cliente.identificacion }}</td><td class="px-4 py-3">{{ o.cliente.nombres }}</td><td class="whitespace-nowrap px-4 py-3 text-right">$ {{ o.subtotal|floatformat:2 }}</td><td class="whitespace-nowrap px-4 py-3 text-right">$ {{ o.iva|floatformat:2 }}</td><td class="whitespace-nowrap px-4 py-3 text-right font-semibold">$ {{ o.total|floatformat:2 }}</td><td class="px-4 py-3"><span class="rounded-full px-3 py-1 text-xs font-semibold {% if o.estado == 'APROBADA' %}bg-emerald-50 text-emerald-700{% elif o.estado == 'FACTURADA' %}bg-blue-50 text-blue-700{% elif o.estado == 'ANULADA' %}bg-red-50 text-red-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ o.get_estado_display }}</span></td></tr>
+{% empty %}<tr><td colspan="9" class="px-4 py-10 text-center text-slate-500">Todavía no hay ofertas registradas. Crea la primera en el formulario de abajo.</td></tr>{% endfor %}
+</tbody></table></div></section>
 <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 <h2 class="mb-5 text-xl font-bold">Nueva oferta</h2>
 <form method="post" id="ofertaForm">{% csrf_token %}
@@ -13,9 +18,6 @@
 <div class="overflow-x-auto"><table class="min-w-full text-sm"><thead><tr class="border-b text-left text-xs uppercase text-slate-500"><th class="py-2">Producto</th><th class="px-2 py-2">Cantidad</th><th class="px-2 py-2">Precio</th><th></th></tr></thead><tbody id="detalleOferta"></tbody></table></div>
 <div class="mt-5 flex justify-end"><button class="rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white">Guardar oferta</button></div>
 </form></section>
-<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><h2 class="mb-5 text-xl font-bold">Ofertas registradas</h2>
-<div class="space-y-3">{% for o in ofertas %}<div class="rounded-xl border border-slate-200 p-4"><div class="flex flex-wrap items-center justify-between gap-2"><div><div class="font-semibold">{{ o.numero }}</div><div class="text-sm text-slate-500">{{ o.cliente.nombres }} · {{ o.fecha|date:"d/m/Y" }}</div></div><span class="rounded-full px-3 py-1 text-xs font-semibold {% if o.estado == 'APROBADA' %}bg-emerald-50 text-emerald-700{% elif o.estado == 'FACTURADA' %}bg-blue-50 text-blue-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ o.get_estado_display }}</span></div><div class="mt-3 text-right font-bold">$ {{ o.total|floatformat:2 }}</div></div>{% empty %}<p class="text-sm text-slate-500">Todavía no hay ofertas registradas.</p>{% endfor %}</div>
-</section></div>
 {{ productos_data|json_script:"productos-oferta-data" }}
 <script>
 const productosOferta=JSON.parse(document.getElementById("productos-oferta-data").textContent);
