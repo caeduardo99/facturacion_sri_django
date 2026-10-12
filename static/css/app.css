@@ -121,3 +121,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid #bfdbfe;outline-offset
 .secondary-action:hover{background:#f8fafc;color:#172033}
 .results-heading{display:flex;justify-content:space-between;align-items:center;margin:0 0 .8rem}
 @media(max-width:640px){.filter-panel{padding:1rem}.filter-actions{flex-wrap:wrap}}
+
+.sidebar-sub-link{margin-left:.85rem;padding:.55rem .7rem;font-size:.79rem;color:#9fb2cc;border-left:1px solid #34445c;border-radius:0 .55rem .55rem 0}
+.sidebar-sub-link .nav-icon{font-size:.9rem;color:#7d91ad}
+.sidebar-sub-link:hover{border-left-color:#60a5fa}
+.sidebar-sub-link.active{background:#1e3455;border-left:2px solid #60a5fa;color:#fff;box-shadow:none}
