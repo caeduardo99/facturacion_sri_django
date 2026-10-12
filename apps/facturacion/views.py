@@ -12,9 +12,8 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, KeepTogether
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.graphics.barcode.code128 import Code128
-from reportlab.graphics.shapes import Drawing
 
 from apps.clientes.models import Cliente
 from apps.empresas.models import Empresa
@@ -199,7 +198,7 @@ def descargar_ride(request, pk):
 
     barcode_cell = P("CLAVE DE ACCESO", "RideBold")
     if clave:
-        barcode = Code128(clave, barHeight=12*mm, barWidth=0.34*mm, humanReadable=True)
+        barcode = Code128(clave, barHeight=8*mm, barWidth=0.12*mm, humanReadable=True)
         barcode_cell = [barcode_cell, Spacer(1, 2*mm), barcode]
 
     datos_tributarios = [
@@ -208,7 +207,7 @@ def descargar_ride(request, pk):
         [P(f"<b>No.</b> {numero}")],
         [P("<b>NÚMERO DE AUTORIZACIÓN</b>")],
         [P(clave)],
-        [P(f"<b>FECHA Y HORA DE AUTORIZACIÓN:</b> {comprobante.fecha_emision.strftime('%d/%m/%Y')}")],
+        [P("<b>FECHA Y HORA DE AUTORIZACIÓN:</b> PENDIENTE DE AUTORIZACIÓN")],
         [P(f"<b>AMBIENTE:</b> {'PRUEBAS' if empresa.ambiente_sri == 1 else 'PRODUCCIÓN'}")],
         [P("<b>EMISIÓN:</b> NORMAL")],
         [barcode_cell],
