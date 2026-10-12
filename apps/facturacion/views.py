@@ -327,7 +327,7 @@ def consulta_general(request):
         ofertas = Oferta.objects.none()
     if estado_transaccion:
         comprobantes = comprobantes.filter(estado_transaccion=estado_transaccion)
-        ofertas = ofertas.filter(estado=estado_transaccion)
+        # Los estados operativos de comprobantes no corresponden a los estados de oferta.
     if buscar:
         from django.db.models import Q
         comprobantes = comprobantes.filter(Q(cliente__identificacion__icontains=buscar) | Q(cliente__nombres__icontains=buscar) | Q(clave_acceso__icontains=buscar) | Q(secuencial__icontains=buscar))
