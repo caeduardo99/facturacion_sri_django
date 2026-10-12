@@ -26,7 +26,8 @@ def lista(request):
 
 @login_required
 def nuevo(request):
-    clientes = Cliente.objects.filter(activo=True).order_by("nombres")
+    clientes = Cliente.objects.filter(activo=True).only("id", "identificacion", "nombres").order_by("nombres")
+    clientes_data = [{"id": c.id, "identificacion": c.identificacion, "nombres": c.nombres} for c in clientes]
     productos = Producto.objects.filter(activo=True).order_by("nombre")
     productos_data = [{"id": p.id, "codigo": p.codigo, "nombre": p.nombre, "precio": str(p.precio), "iva": str(p.porcentaje_iva)} for p in productos]
 
@@ -40,14 +41,14 @@ def nuevo(request):
             cliente = Cliente.objects.get(pk=cliente_id, activo=True)
         except (Cliente.DoesNotExist, ValueError, TypeError):
             return render(request, "facturacion/nuevo.html", {
-                "clientes": clientes, "productos": productos, "productos_data": productos_data,
+                "clientes": clientes, "clientes_data": clientes_data, "productos": productos, "productos_data": productos_data,
                 "error": "Selecciona un cliente válido.",
                 "form": request.POST,
             })
 
         if len(establecimiento) != 3 or len(punto_emision) != 3:
             return render(request, "facturacion/nuevo.html", {
-                "clientes": clientes, "productos": productos,
+                "clientes": clientes, "clientes_data": clientes_data, "productos": productos,
                 "error": "El establecimiento y el punto de emisión deben tener 3 dígitos.",
                 "form": request.POST,
             })
@@ -133,6 +134,7 @@ def nuevo(request):
 
     return render(request, "facturacion/nuevo.html", {
         "clientes": clientes,
+        "clientes_data": clientes_data,
         "productos": productos,
     })
 
