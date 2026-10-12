@@ -136,7 +136,7 @@ def ofertas(request):
         try:
             cliente = Cliente.objects.get(pk=cliente_id, activo=True)
         except (Cliente.DoesNotExist, ValueError, TypeError):
-            return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos": productos, "error": "Selecciona un cliente válido."})
+            return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos_data": [{"id": p.id, "codigo": p.codigo, "nombre": p.nombre, "precio": str(p.precio), "iva": str(p.porcentaje_iva)} for p in productos], "error": "Selecciona un cliente válido."})
         ids = request.POST.getlist("producto_id")
         cantidades = request.POST.getlist("cantidad")
         items = []
@@ -156,7 +156,7 @@ def ofertas(request):
             subtotal += base
             iva_total += impuesto
         if not items:
-            return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos": productos, "error": "Agrega al menos un producto a la oferta."})
+            return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos_data": [{"id": p.id, "codigo": p.codigo, "nombre": p.nombre, "precio": str(p.precio), "iva": str(p.porcentaje_iva)} for p in productos], "error": "Agrega al menos un producto a la oferta."})
         with transaction.atomic():
             oferta = Oferta.objects.create(cliente=cliente, subtotal=subtotal, iva=iva_total, total=subtotal + iva_total)
             oferta.estado = "APROBADA"
@@ -165,7 +165,7 @@ def ofertas(request):
                 DetalleOferta.objects.create(oferta=oferta, producto=producto, codigo=producto.codigo, descripcion=producto.nombre, cantidad=cantidad, precio_unitario=producto.precio, subtotal=base, iva=impuesto, total=total_linea)
         return redirect("facturacion:ofertas")
     lista_ofertas = Oferta.objects.select_related("cliente").prefetch_related("detalles").all()
-    return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos": productos, "ofertas": lista_ofertas})
+    return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos_data": [{"id": p.id, "codigo": p.codigo, "nombre": p.nombre, "precio": str(p.precio), "iva": str(p.porcentaje_iva)} for p in productos], "ofertas": lista_ofertas})
 
 
 @login_required
