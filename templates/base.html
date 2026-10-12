@@ -16,7 +16,10 @@
     <nav class="sidebar-nav" aria-label="Navegación principal">
       <a href="/" class="sidebar-link {% if request.path == '/' %}active{% endif %}"><span class="nav-icon">⌂</span>Inicio</a>
       <div class="nav-group-label">OPERACIÓN</div>
-      <a href="/facturacion/" class="sidebar-link {% if '/facturacion/' in request.path and 'configuracion' not in request.path and 'catalogo' not in request.path %}active{% endif %}"><span class="nav-icon">▤</span>Facturación</a>
+      <a href="/facturacion/" class="sidebar-link {% if request.path == '/facturacion/' %}active{% endif %}"><span class="nav-icon">▤</span>Facturación</a>
+      {% for menu in menus_facturacion %}
+      <a href="{% url 'facturacion:nuevo' %}?transaccion={{ menu.codigo|urlencode }}" class="sidebar-link sidebar-sub-link {% if request.GET.transaccion == menu.codigo %}active{% endif %}"><span class="nav-icon">↳</span>{{ menu.nombre }}</a>
+      {% endfor %}
       <a href="/facturacion/consulta-general/" class="sidebar-link {% if 'consulta-general' in request.path %}active{% endif %}"><span class="nav-icon">⌕</span>Consulta de transacciones</a>
       <div class="nav-group-label">MANTENIMIENTO</div>
       <a href="/clientes/" class="sidebar-link {% if '/clientes/' in request.path %}active{% endif %}"><span class="nav-icon">♙</span>Clientes</a>
