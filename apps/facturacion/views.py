@@ -128,6 +128,12 @@ def _generar_xml_factura(comprobante, empresa, ambiente_sri=None):
 
 
 @login_required
+def configuracion_menus(request):
+    menus = TipoTransaccion.objects.all().order_by("modulo", "nombre")
+    return render(request, "facturacion/configuracion_menus.html", {"menus": menus})
+
+
+@login_required
 def catalogo_transacciones(request):
     q = request.GET.get("q", "").strip()
     transacciones = TipoTransaccion.objects.all()
