@@ -19,7 +19,7 @@ from apps.clientes.models import Cliente
 from apps.empresas.models import Empresa
 from apps.productos.models import Producto
 
-from .models import Comprobante, DetalleComprobante, Pago, TipoTransaccion
+from .models import Comprobante, DetalleComprobante, Pago, TipoTransaccion, Oferta, DetalleOferta
 
 
 def decimal_value(value, default="0"):
@@ -125,6 +125,57 @@ def _generar_xml_factura(comprobante, empresa, ambiente_sri=None):
         campo = ET.SubElement(adicional, "campoAdicional", {"nombre": "Email"})
         campo.text = cliente.email
     return ET.tostring(raiz, encoding="unicode")
+
+
+@login_required
+def ofertas(request):
+    clientes = Cliente.objects.filter(activo=True).order_by("nombres")
+    productos = Producto.objects.filter(activo=True).order_by("nombre")
+    if request.method == "POST":
+        cliente_id = request.POST.get("cliente")
+        try:
+            cliente = Cliente.objects.get(pk=cliente_id, activo=True)
+        except (Cliente.DoesNotExist, ValueError, TypeError):
+            return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos": productos, "error": "Selecciona un cliente válido."})
+        ids = request.POST.getlist("producto_id")
+        cantidades = request.POST.getlist("cantidad")
+        items = []
+        subtotal = Decimal("0.00")
+        iva_total = Decimal("0.00")
+        for pid, cantidad_txt in zip(ids, cantidades):
+            try:
+                producto = Producto.objects.get(pk=pid, activo=True)
+                cantidad = decimal_value(cantidad_txt)
+            except (Producto.DoesNotExist, ValueError, TypeError):
+                cantidad = None
+            if cantidad is None or cantidad <= 0:
+                continue
+            base = (producto.precio * cantidad).quantize(Decimal("0.01"))
+            impuesto = (base * producto.porcentaje_iva / Decimal("100")).quantize(Decimal("0.01"))
+            items.append((producto, cantidad, base, impuesto, base + impuesto))
+            subtotal += base
+            iva_total += impuesto
+        if not items:
+            return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos": productos, "error": "Agrega al menos un producto a la oferta."})
+        with transaction.atomic():
+            oferta = Oferta.objects.create(cliente=cliente, subtotal=subtotal, iva=iva_total, total=subtotal + iva_total)
+            oferta.estado = "APROBADA"
+            oferta.save(update_fields=["estado", "actualizado"])
+            for producto, cantidad, base, impuesto, total_linea in items:
+                DetalleOferta.objects.create(oferta=oferta, producto=producto, codigo=producto.codigo, descripcion=producto.nombre, cantidad=cantidad, precio_unitario=producto.precio, subtotal=base, iva=impuesto, total=total_linea)
+        return redirect("facturacion:ofertas")
+    lista_ofertas = Oferta.objects.select_related("cliente").prefetch_related("detalles").all()
+    return render(request, "facturacion/ofertas.html", {"clientes": clientes, "productos": productos, "ofertas": lista_ofertas})
+
+
+@login_required
+def oferta_detalle_json(request, pk):
+    oferta = get_object_or_404(Oferta.objects.select_related("cliente").prefetch_related("detalles__producto"), pk=pk, estado="APROBADA")
+    return HttpResponse(__import__("json").dumps({
+        "id": oferta.id, "numero": oferta.numero, "cliente_id": oferta.cliente_id,
+        "cliente": oferta.cliente.nombres, "identificacion": oferta.cliente.identificacion,
+        "items": [{"producto_id": d.producto_id, "cantidad": str(d.cantidad)} for d in oferta.detalles.all()]
+    }), content_type="application/json")
 
 
 @login_required
@@ -491,7 +542,11 @@ def nuevo(request):
                 "configuracion_fe": configuracion_fe,
                 "codigo_transaccion": codigo_transaccion,
             })
-        cliente_id = request.POST.get("cliente")
+        oferta_importada = None
+        oferta_id = request.POST.get("oferta_id", "").strip()
+        if oferta_id:
+            oferta_importada = get_object_or_404(Oferta, pk=oferta_id, estado="APROBADA")
+        cliente_id = oferta_importada.cliente_id if oferta_importada else request.POST.get("cliente")
         tipo = configuracion_fe.codigo_documento_sri or "01"
         ambiente_sri = configuracion_fe.ambiente_sri or 1
         # La numeración se toma de la configuración guardada para este código de transacción.
@@ -518,32 +573,38 @@ def nuevo(request):
                 "codigo_transaccion": codigo_transaccion,
             })
 
-        producto_ids = request.POST.getlist("producto_id")
-        cantidades = request.POST.getlist("cantidad")
-
         items = []
         subtotal = Decimal("0")
         iva = Decimal("0")
-
-        for producto_id, cantidad_texto in zip(producto_ids, cantidades):
-            if not producto_id:
-                continue
-            try:
-                producto = Producto.objects.get(pk=producto_id, activo=True)
-                cantidad = decimal_value(cantidad_texto)
-            except (Producto.DoesNotExist, ValueError, TypeError):
-                cantidad = None
-
-            if cantidad is None or cantidad <= 0:
-                continue
-
-            base = (producto.precio * cantidad).quantize(Decimal("0.01"))
-            impuesto = (base * producto.porcentaje_iva / Decimal("100")).quantize(Decimal("0.01"))
-            total_linea = base + impuesto
-
-            items.append((producto, cantidad, base, impuesto, total_linea))
-            subtotal += base
-            iva += impuesto
+        if oferta_importada:
+            for detalle_oferta in oferta_importada.detalles.select_related("producto").all():
+                producto = detalle_oferta.producto
+                cantidad = detalle_oferta.cantidad
+                base = detalle_oferta.subtotal
+                impuesto = detalle_oferta.iva
+                total_linea = detalle_oferta.total
+                items.append((producto, cantidad, base, impuesto, total_linea))
+                subtotal += base
+                iva += impuesto
+        else:
+            producto_ids = request.POST.getlist("producto_id")
+            cantidades = request.POST.getlist("cantidad")
+            for producto_id, cantidad_texto in zip(producto_ids, cantidades):
+                if not producto_id:
+                    continue
+                try:
+                    producto = Producto.objects.get(pk=producto_id, activo=True)
+                    cantidad = decimal_value(cantidad_texto)
+                except (Producto.DoesNotExist, ValueError, TypeError):
+                    cantidad = None
+                if cantidad is None or cantidad <= 0:
+                    continue
+                base = (producto.precio * cantidad).quantize(Decimal("0.01"))
+                impuesto = (base * producto.porcentaje_iva / Decimal("100")).quantize(Decimal("0.01"))
+                total_linea = base + impuesto
+                items.append((producto, cantidad, base, impuesto, total_linea))
+                subtotal += base
+                iva += impuesto
 
         if not items:
             return render(request, "facturacion/nuevo.html", {
@@ -577,6 +638,7 @@ def nuevo(request):
             comprobante = Comprobante.objects.create(
                 tipo=tipo,
                 codigo_transaccion=configuracion_fe.codigo,
+                oferta=oferta_importada,
                 fecha_emision=timezone.localdate(),
                 establecimiento=establecimiento,
                 punto_emision=punto_emision,
@@ -614,6 +676,9 @@ def nuevo(request):
             # Mantener visible el siguiente secuencial en la configuración de la transacción.
             configuracion_fe.transaccion_siguiente = secuencial + 1
             configuracion_fe.save(update_fields=["transaccion_siguiente", "actualizado"])
+            if oferta_importada:
+                oferta_importada.estado = "FACTURADA"
+                oferta_importada.save(update_fields=["estado", "actualizado"])
 
         return redirect("facturacion:lista")
 
