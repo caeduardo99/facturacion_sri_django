@@ -1,1 +1,42 @@
-{% extends 'base.html' %}{% block content %}<div class='page-head'><div><h1>Dashboard</h1><p>Resumen de tu facturación.</p></div><a class='button' href='/facturacion/'>Facturación</a></div><section class='cards'><div><small>Ventas</small><strong>$0.00</strong></div><div><small>Facturas</small><strong>0</strong></div><div><small>Pendientes SRI</small><strong>0</strong></div></section>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Inicio | FacturaEC{% endblock %}
+{% block header_title %}Inicio{% endblock %}
+{% block content %}
+<section class="dashboard-welcome">
+  <div>
+    <span class="eyebrow-pill"><span class="status-dot"></span> SISTEMA OPERATIVO</span>
+    <h1>Bienvenido a FacturaEC</h1>
+    <p>Gestiona tus comprobantes electrónicos desde un solo lugar.</p>
+  </div>
+  <a href="{% url 'facturacion:nuevo' %}" class="primary-action"><span>＋</span> Nueva factura</a>
+</section>
+
+<section class="section-heading">
+  <div><h2>Accesos rápidos</h2><p>Las tareas más utilizadas, a un clic de distancia.</p></div>
+</section>
+<div class="quick-grid">
+  <a class="quick-card quick-card-primary" href="{% url 'facturacion:nuevo' %}">
+    <span class="quick-icon">＋</span><span class="quick-title">Emitir factura</span><span class="quick-description">Registrar un nuevo comprobante electrónico.</span><span class="quick-link">Crear factura <span>→</span></span>
+  </a>
+  <a class="quick-card" href="{% url 'facturacion:consulta_general' %}">
+    <span class="quick-icon">⌕</span><span class="quick-title">Consultar transacciones</span><span class="quick-description">Buscar comprobantes y revisar por separado su estado operativo y estado SRI.</span><span class="quick-link">Abrir consulta <span>→</span></span>
+  </a>
+  <a class="quick-card" href="/clientes/">
+    <span class="quick-icon">♙</span><span class="quick-title">Clientes</span><span class="quick-description">Mantener identificaciones y datos de facturación.</span><span class="quick-link">Administrar clientes <span>→</span></span>
+  </a>
+  <a class="quick-card" href="/productos/">
+    <span class="quick-icon">▦</span><span class="quick-title">Productos y servicios</span><span class="quick-description">Organizar los productos y servicios disponibles para facturar.</span><span class="quick-link">Ver catálogo <span>→</span></span>
+  </a>
+  <a class="quick-card" href="/empresas/">
+    <span class="quick-icon">▣</span><span class="quick-title">Empresas</span><span class="quick-description">Configurar la información de las empresas emisoras.</span><span class="quick-link">Configurar empresas <span>→</span></span>
+  </a>
+  <a class="quick-card" href="/facturacion/configuracion-menus/">
+    <span class="quick-icon">☷</span><span class="quick-title">Menús y transacciones</span><span class="quick-description">Revisar las opciones y códigos de pantalla del sistema.</span><span class="quick-link">Ver configuración <span>→</span></span>
+  </a>
+</div>
+
+<section class="dashboard-note">
+  <span class="note-icon">i</span>
+  <div><strong>Importante sobre el estado de los comprobantes</strong><p>El estado de la transacción y el estado de autorización del SRI son datos distintos. Consulta ambos antes de tomar acciones sobre una factura.</p></div>
+</section>
+{% endblock %}
