@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Consulta general de transacciones | FacturaEC{% endblock %}
+{% block header_title %}Consulta general de transacciones{% endblock %}
+{% block content %}
+<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div><h1 class="text-3xl font-bold">Consulta general de transacciones</h1><p class="mt-1 text-slate-500">Consulta tus comprobantes y descarga el XML generado al guardar cada factura.</p></div>
+  <a href="{% url 'facturacion:nuevo' %}" class="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white">+ Nueva factura</a>
+</div>
+<div class="mb-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">El archivo XML disponible aquí es el XML generado por el sistema. Todavía no está firmado electrónicamente ni autorizado por el SRI.</div>
+<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+<table class="min-w-full text-left text-sm">
+<thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-5 py-4">Número</th><th class="px-5 py-4">Fecha</th><th class="px-5 py-4">Identificación</th><th class="px-5 py-4">Cliente</th><th class="px-5 py-4">Total</th><th class="px-5 py-4">Clave de acceso</th><th class="px-5 py-4">Estado</th><th class="px-5 py-4">Acciones</th></tr></thead>
+<tbody class="divide-y divide-slate-100">
+{% for c in comprobantes %}
+<tr class="hover:bg-slate-50">
+<td class="whitespace-nowrap px-5 py-4 font-semibold">{{ c.establecimiento }}-{{ c.punto_emision }}-{{ c.secuencial|stringformat:"09d" }}</td>
+<td class="whitespace-nowrap px-5 py-4">{{ c.fecha_emision|date:"d/m/Y" }}</td>
+<td class="px-5 py-4">{{ c.cliente.identificacion }}</td><td class="px-5 py-4">{{ c.cliente.nombres }}</td>
+<td class="whitespace-nowrap px-5 py-4">$ {{ c.total|floatformat:2 }}</td>
+<td class="px-5 py-4 font-mono text-xs">{{ c.clave_acceso|default:"—" }}</td><td class="px-5 py-4">{{ c.get_estado_display }}</td>
+<td class="whitespace-nowrap px-5 py-4"><a class="mr-3 font-semibold text-blue-600" href="{% url 'facturacion:detalle' c.pk %}">Ver</a>{% if c.xml_generado %}<a class="font-semibold text-emerald-700" href="{% url 'facturacion:descargar_xml' c.pk %}">Descargar XML</a>{% else %}<span class="text-slate-400">XML no disponible</span>{% endif %}</td>
+</tr>
+{% empty %}<tr><td colspan="8" class="px-5 py-12 text-center text-slate-500">Todavía no hay transacciones registradas.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}
