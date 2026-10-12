@@ -13,7 +13,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, KeepTogether
-from reportlab.graphics.barcode import Code128
+from reportlab.graphics.barcode.code128 import Code128
 from reportlab.graphics.shapes import Drawing
 
 from apps.clientes.models import Cliente
