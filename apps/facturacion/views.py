@@ -254,12 +254,12 @@ def descargar_ride(request, pk):
             P("0.00","RideTiny"), P(f"{item.precio_unitario:.2f}","RideTiny"),
             P(f"{item.descuento:.2f}","RideTiny"), P(f"{item.total:.2f}","RideTiny")
         ])
-    tabla_detalles = Table(filas, colWidths=[15*mm, 14*mm, 15*mm, 37*mm, 23*mm, 17*mm, 13*mm, 18*mm, 15*mm, 18*mm], repeatRows=1)
+    tabla_detalles = Table(filas, colWidths=[14*mm, 12*mm, 14*mm, 34*mm, 20*mm, 16*mm, 11*mm, 17*mm, 14*mm, 23*mm], repeatRows=1)
     tabla_detalles.setStyle(TableStyle([
         ("GRID",(0,0),(-1,-1),0.45,border),("VALIGN",(0,0),(-1,-1),"MIDDLE"),
         ("ALIGN",(0,0),(-1,-1),"CENTER"),("LEFTPADDING",(0,0),(-1,-1),2),
-        ("RIGHTPADDING",(0,0),(-1,-1),2),("TOPPADDING",(0,0),(-1,-1),5),
-        ("BOTTOMPADDING",(0,0),(-1,-1),5),("BACKGROUND",(0,0),(-1,0),colors.HexColor("#F2F2F2")),
+        ("RIGHTPADDING",(0,0),(-1,-1),2),("TOPPADDING",(0,0),(-1,-1),3),
+        ("BOTTOMPADDING",(0,0),(-1,-1),3),("BACKGROUND",(0,0),(-1,0),colors.HexColor("#F2F2F2")),
     ]))
     story.append(tabla_detalles)
     story.append(Spacer(1, 3*mm))
