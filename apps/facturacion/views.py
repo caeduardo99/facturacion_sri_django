@@ -171,6 +171,12 @@ def transaccion_form(request, pk=None):
         transaccion.cod_pantalla = request.POST.get("cod_pantalla", "").strip()
         transaccion.modulo = request.POST.get("modulo", "Facturación").strip() or "Facturación"
         transaccion.transaccion_siguiente = int(request.POST.get("transaccion_siguiente") or 1)
+        transaccion.establecimiento = request.POST.get("establecimiento", "001").strip()
+        transaccion.punto_emision = request.POST.get("punto_emision", "001").strip()
+        if len(transaccion.establecimiento) != 3 or not transaccion.establecimiento.isdigit() or len(transaccion.punto_emision) != 3 or not transaccion.punto_emision.isdigit():
+            return render(request, "facturacion/transaccion_form.html", {
+                "transaccion": transaccion, "error": "El establecimiento y el punto de emisión deben ser códigos numéricos de 3 dígitos.", "form": request.POST, "doc_codes": [("01", "Factura"), ("03", "Liquidación de compra"), ("04", "Nota de crédito"), ("05", "Nota de débito"), ("06", "Guía de remisión"), ("07", "Retención")],
+            })
         transaccion.sucursal = request.POST.get("sucursal", "").strip()
         transaccion.libreria_impresion = request.POST.get("libreria_impresion", "").strip()
         transaccion.libreria_ride = request.POST.get("libreria_ride", "").strip()
@@ -476,8 +482,9 @@ def nuevo(request):
         cliente_id = request.POST.get("cliente")
         tipo = configuracion_fe.codigo_documento_sri or "01"
         ambiente_sri = configuracion_fe.ambiente_sri or 1
-        establecimiento = request.POST.get("establecimiento", "001").strip()
-        punto_emision = request.POST.get("punto_emision", "001").strip()
+        # La numeración se toma de la configuración guardada para este código de transacción.
+        establecimiento = configuracion_fe.establecimiento
+        punto_emision = configuracion_fe.punto_emision
 
         try:
             cliente = Cliente.objects.get(pk=cliente_id, activo=True)
