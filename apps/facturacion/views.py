@@ -6,6 +6,14 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import HttpResponse, Http404
 from django.utils import timezone
+from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+import qrcode
 
 from apps.clientes.models import Cliente
 from apps.empresas.models import Empresa
@@ -139,6 +147,123 @@ def descargar_xml(request, pk):
     nombre = f"factura_{comprobante.establecimiento}-{comprobante.punto_emision}-{comprobante.secuencial:09d}.xml"
     response = HttpResponse(comprobante.xml_generado, content_type="application/xml; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="{nombre}"'
+    return response
+
+
+@login_required
+def descargar_ride(request, pk):
+    comprobante = get_object_or_404(
+        Comprobante.objects.select_related("cliente").prefetch_related("detalles__producto", "pagos"),
+        pk=pk,
+    )
+    empresa = Empresa.objects.filter(activo=True).order_by("id").first()
+    if not empresa:
+        raise Http404("No existe una empresa emisora activa para generar el RIDE.")
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4, rightMargin=15*mm, leftMargin=15*mm,
+        topMargin=12*mm, bottomMargin=12*mm,
+        title=f"RIDE {comprobante.establecimiento}-{comprobante.punto_emision}-{comprobante.secuencial:09d}",
+    )
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name="EmpresaTitle", parent=styles["Title"], fontSize=14, leading=17, alignment=0, textColor=colors.HexColor("#172554")))
+    styles.add(ParagraphStyle(name="SmallText", parent=styles["Normal"], fontSize=8, leading=10))
+    styles.add(ParagraphStyle(name="RightText", parent=styles["Normal"], alignment=TA_RIGHT, fontSize=9))
+    story = []
+    numero = f"{comprobante.establecimiento}-{comprobante.punto_emision}-{comprobante.secuencial:09d}"
+    story.append(Paragraph(empresa.razon_social, styles["EmpresaTitle"]))
+    if empresa.nombre_comercial:
+        story.append(Paragraph(empresa.nombre_comercial, styles["Normal"]))
+    story.append(Paragraph(f"RUC: {empresa.ruc}<br/>Matriz: {empresa.direccion_matriz or 'No registrada'}", styles["SmallText"]))
+    story.append(Spacer(1, 5*mm))
+
+    qr_buffer = BytesIO()
+    qr_img = qrcode.make(comprobante.clave_acceso or numero)
+    qr_img.save(qr_buffer, format="PNG")
+    qr_buffer.seek(0)
+    qr = Image(qr_buffer, width=28*mm, height=28*mm)
+    resumen = [
+        [Paragraph("<b>COMPROBANTE ELECTRÓNICO</b>", styles["Normal"]), Paragraph("<b>FACTURA</b>", styles["Normal"])],
+        [Paragraph(f"<b>No.</b> {numero}<br/><b>Fecha de emisión:</b> {comprobante.fecha_emision.strftime('%d/%m/%Y')}<br/><b>Ambiente:</b> {'Pruebas' if empresa.ambiente_sri == 1 else 'Producción'}<br/><b>Emisión:</b> Normal", styles["SmallText"]),
+         Paragraph(f"<b>Clave de acceso:</b><br/>{comprobante.clave_acceso}", styles["SmallText"])],
+        [Paragraph(f"<b>Razón social:</b> {empresa.razon_social}<br/><b>RUC:</b> {empresa.ruc}<br/><b>Dirección matriz:</b> {empresa.direccion_matriz or 'No registrada'}", styles["SmallText"]), qr],
+    ]
+    tabla_resumen = Table(resumen, colWidths=[100*mm, 75*mm])
+    tabla_resumen.setStyle(TableStyle([
+        ("BOX", (0,0), (-1,-1), 0.7, colors.HexColor("#94A3B8")),
+        ("INNERGRID", (0,0), (-1,-1), 0.4, colors.HexColor("#CBD5E1")),
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#EFF6FF")),
+        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+        ("LEFTPADDING", (0,0), (-1,-1), 7), ("RIGHTPADDING", (0,0), (-1,-1), 7),
+        ("TOPPADDING", (0,0), (-1,-1), 6), ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+    ]))
+    story.append(tabla_resumen)
+    story.append(Spacer(1, 5*mm))
+
+    comprador = [
+        [Paragraph("<b>DATOS DEL CLIENTE</b>", styles["Normal"])],
+        [Paragraph(f"<b>Identificación:</b> {comprobante.cliente.identificacion}<br/><b>Razón social / nombres:</b> {comprobante.cliente.nombres}<br/><b>Dirección:</b> {getattr(comprobante.cliente, 'direccion', '') or 'No registrada'}<br/><b>Email:</b> {getattr(comprobante.cliente, 'email', '') or 'No registrado'}", styles["SmallText"])],
+    ]
+    tabla_cliente = Table(comprador, colWidths=[175*mm])
+    tabla_cliente.setStyle(TableStyle([
+        ("BOX", (0,0), (-1,-1), 0.7, colors.HexColor("#94A3B8")),
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#EFF6FF")),
+        ("LEFTPADDING", (0,0), (-1,-1), 7), ("TOPPADDING", (0,0), (-1,-1), 6),
+        ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+    ]))
+    story.append(tabla_cliente)
+    story.append(Spacer(1, 5*mm))
+
+    filas = [[
+        Paragraph("<b>Código</b>", styles["SmallText"]),
+        Paragraph("<b>Descripción</b>", styles["SmallText"]),
+        Paragraph("<b>Cant.</b>", styles["SmallText"]),
+        Paragraph("<b>Precio unit.</b>", styles["SmallText"]),
+        Paragraph("<b>Descuento</b>", styles["SmallText"]),
+        Paragraph("<b>Total</b>", styles["SmallText"]),
+    ]]
+    for item in comprobante.detalles.all():
+        filas.append([
+            Paragraph(str(item.codigo), styles["SmallText"]),
+            Paragraph(str(item.descripcion)[:300], styles["SmallText"]),
+            f"{item.cantidad.normalize():f}",
+            f"$ {item.precio_unitario:.2f}",
+            f"$ {item.descuento:.2f}",
+            f"$ {item.total:.2f}",
+        ])
+    tabla_detalles = Table(filas, colWidths=[22*mm, 69*mm, 18*mm, 25*mm, 20*mm, 21*mm], repeatRows=1)
+    tabla_detalles.setStyle(TableStyle([
+        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#DBEAFE")),
+        ("GRID", (0,0), (-1,-1), 0.35, colors.HexColor("#CBD5E1")),
+        ("VALIGN", (0,0), (-1,-1), "TOP"),
+        ("ALIGN", (2,1), (-1,-1), "RIGHT"),
+        ("LEFTPADDING", (0,0), (-1,-1), 4), ("RIGHTPADDING", (0,0), (-1,-1), 4),
+        ("TOPPADDING", (0,0), (-1,-1), 5), ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+    ]))
+    story.append(tabla_detalles)
+    story.append(Spacer(1, 4*mm))
+
+    totales = [
+        ["Subtotal", f"$ {comprobante.subtotal:.2f}"],
+        ["Descuento", f"$ {comprobante.descuento:.2f}"],
+        ["IVA", f"$ {comprobante.iva:.2f}"],
+        ["VALOR TOTAL", f"$ {comprobante.total:.2f}"],
+    ]
+    tabla_totales = Table(totales, colWidths=[40*mm, 35*mm], hAlign="RIGHT")
+    tabla_totales.setStyle(TableStyle([
+        ("ALIGN", (1,0), (1,-1), "RIGHT"),
+        ("LINEABOVE", (0,3), (-1,3), 0.8, colors.HexColor("#334155")),
+        ("FONTNAME", (0,3), (-1,3), "Helvetica-Bold"),
+        ("FONTSIZE", (0,0), (-1,-1), 9),
+        ("TOPPADDING", (0,0), (-1,-1), 4), ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+    ]))
+    story.append(tabla_totales)
+    story.append(Spacer(1, 5*mm))
+    story.append(Paragraph(f"<b>Estado en el sistema:</b> {comprobante.get_estado_display()}. Este RIDE es una representación impresa de los datos guardados; no confirma por sí solo la autorización del SRI.", styles["SmallText"]))
+    doc.build(story)
+    response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="RIDE_{numero.replace("-", "_")}.pdf"'
     return response
 
 
