@@ -599,6 +599,10 @@ def nuevo(request):
             comprobante.xml_generado = _generar_xml_factura(comprobante, empresa, ambiente_sri=ambiente_sri)
             comprobante.save(update_fields=["xml_generado", "actualizado"])
 
+            # Mantener visible el siguiente secuencial en la configuración de la transacción.
+            configuracion_fe.transaccion_siguiente = secuencial + 1
+            configuracion_fe.save(update_fields=["transaccion_siguiente", "actualizado"])
+
         return redirect("facturacion:lista")
 
     return render(request, "facturacion/nuevo.html", {
