@@ -48,7 +48,7 @@ def nuevo(request):
 
         if len(establecimiento) != 3 or len(punto_emision) != 3:
             return render(request, "facturacion/nuevo.html", {
-                "clientes": clientes, "clientes_data": clientes_data, "productos": productos,
+                "clientes": clientes, "clientes_data": clientes_data, "productos": productos, "productos_data": productos_data,
                 "error": "El establecimiento y el punto de emisión deben tener 3 dígitos.",
                 "form": request.POST,
             })
@@ -82,7 +82,7 @@ def nuevo(request):
 
         if not items:
             return render(request, "facturacion/nuevo.html", {
-                "clientes": clientes, "productos": productos,
+                "clientes": clientes, "clientes_data": clientes_data, "productos": productos, "productos_data": productos_data,
                 "error": "Agrega al menos un producto a la factura.",
                 "form": request.POST,
             })
@@ -136,6 +136,7 @@ def nuevo(request):
         "clientes": clientes,
         "clientes_data": clientes_data,
         "productos": productos,
+        "productos_data": productos_data,
     })
 
 
