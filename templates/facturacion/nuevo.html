@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Nueva factura | FacturaEC{% endblock %}
-{% block header_title %}Nueva factura{% endblock %}
+{% block title %}{% if configuracion_fe %}{{ configuracion_fe.nombre }}{% else %}Nueva factura{% endif %} | FacturaEC{% endblock %}
+{% block header_title %}{% if configuracion_fe %}{{ configuracion_fe.nombre }}{% else %}Nueva factura{% endif %}{% endblock %}
 {% block content %}
-<div class="mb-8"><a href="{% url 'facturacion:lista' %}" class="text-sm font-medium text-blue-600">← Volver a facturación</a><h1 class="mt-4 text-3xl font-bold">Nueva factura</h1><p class="mt-1 text-slate-500">Crea una factura y calcula automáticamente sus valores.</p></div>
+<div class="mb-8"><a href="{% url 'facturacion:lista' %}" class="text-sm font-medium text-blue-600">← Volver a facturación</a><h1 class="mt-4 text-3xl font-bold">{% if configuracion_fe %}{{ configuracion_fe.nombre }}{% else %}Nueva factura{% endif %}</h1><p class="mt-1 text-slate-500">Transacción: <span class="font-semibold">{{ codigo_transaccion|default:'FE' }}</span>. Crea un comprobante y calcula automáticamente sus valores.</p></div>
 {% if error %}<div class="mb-6 max-w-6xl rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{{ error }}</div>{% endif %}
-<form method="post" id="facturaForm" class="max-w-6xl">{% csrf_token %}
+<form method="post" id="facturaForm" class="max-w-6xl">{% csrf_token %}<input type="hidden" name="codigo_transaccion" value="{{ codigo_transaccion|default:'FE' }}">
 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 <h2 class="text-lg font-bold">Datos del comprobante</h2>
 <div class="mt-5 grid gap-5 md:grid-cols-4">
