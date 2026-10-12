@@ -21,6 +21,8 @@ class TipoTransaccion(models.Model):
     cod_pantalla = models.CharField(max_length=30, blank=True)
     modulo = models.CharField(max_length=80, default="Facturación")
     transaccion_siguiente = models.PositiveIntegerField(default=1)
+    establecimiento = models.CharField(max_length=3, default="001", help_text="Establecimiento autorizado por el SRI para esta transacción")
+    punto_emision = models.CharField(max_length=3, default="001", help_text="Punto de emisión autorizado por el SRI para esta transacción")
     sucursal = models.CharField(max_length=20, blank=True, default="CUENCA")
     libreria_impresion = models.CharField(max_length=100, blank=True, default="gnprintG")
     libreria_ride = models.CharField(max_length=100, blank=True, default="gnprintg")
