@@ -19,7 +19,7 @@ from apps.clientes.models import Cliente
 from apps.empresas.models import Empresa
 from apps.productos.models import Producto
 
-from .models import Comprobante, DetalleComprobante, Pago
+from .models import Comprobante, DetalleComprobante, Pago, TipoTransaccion
 
 
 def decimal_value(value, default="0"):
@@ -125,6 +125,69 @@ def _generar_xml_factura(comprobante, empresa):
         campo = ET.SubElement(adicional, "campoAdicional", {"nombre": "Email"})
         campo.text = cliente.email
     return ET.tostring(raiz, encoding="unicode")
+
+
+@login_required
+def catalogo_transacciones(request):
+    q = request.GET.get("q", "").strip()
+    transacciones = TipoTransaccion.objects.all()
+    if q:
+        from django.db.models import Q
+        transacciones = transacciones.filter(Q(codigo__icontains=q) | Q(nombre__icontains=q) | Q(modulo__icontains=q))
+    return render(request, "facturacion/catalogo_transacciones.html", {
+        "transacciones": transacciones,
+        "q": q,
+    })
+
+
+@login_required
+def transaccion_form(request, pk=None):
+    transaccion = get_object_or_404(TipoTransaccion, pk=pk) if pk else None
+    if request.method == "POST":
+        codigo = request.POST.get("codigo", "").strip().upper()
+        nombre = request.POST.get("nombre", "").strip()
+        if not codigo or not nombre:
+            return render(request, "facturacion/transaccion_form.html", {
+                "transaccion": transaccion, "error": "El código y el nombre son obligatorios.", "form": request.POST,
+            })
+        duplicado = TipoTransaccion.objects.filter(codigo__iexact=codigo)
+        if transaccion:
+            duplicado = duplicado.exclude(pk=transaccion.pk)
+        if duplicado.exists():
+            return render(request, "facturacion/transaccion_form.html", {
+                "transaccion": transaccion, "error": "Ya existe una transacción con ese código.", "form": request.POST,
+            })
+        if transaccion is None:
+            transaccion = TipoTransaccion()
+        transaccion.codigo = codigo
+        transaccion.nombre = nombre
+        transaccion.descripcion = request.POST.get("descripcion", "").strip()
+        transaccion.cod_pantalla = request.POST.get("cod_pantalla", "").strip()
+        transaccion.modulo = request.POST.get("modulo", "Facturación").strip() or "Facturación"
+        transaccion.transaccion_siguiente = int(request.POST.get("transaccion_siguiente") or 1)
+        transaccion.sucursal = request.POST.get("sucursal", "").strip()
+        transaccion.libreria_impresion = request.POST.get("libreria_impresion", "").strip()
+        transaccion.libreria_ride = request.POST.get("libreria_ride", "").strip()
+        transaccion.documento_electronico = request.POST.get("documento_electronico") == "on"
+        transaccion.codigo_documento_sri = request.POST.get("codigo_documento_sri", "").strip()
+        transaccion.ambiente_sri = int(request.POST.get("ambiente_sri") or 1)
+        transaccion.utiliza_formato_estandar_xml = request.POST.get("utiliza_formato_estandar_xml") == "on"
+        transaccion.generacion_bloque_xml = request.POST.get("generacion_bloque_xml") == "on"
+        transaccion.seis_decimales = request.POST.get("seis_decimales") == "on"
+        transaccion.importacion_requerida = request.POST.get("importacion_requerida") == "on"
+        transaccion.activo = request.POST.get("activo") == "on"
+        transaccion.save()
+        return redirect("facturacion:catalogo_transacciones")
+    return render(request, "facturacion/transaccion_form.html", {"transaccion": transaccion})
+
+
+@login_required
+def transaccion_eliminar(request, pk):
+    transaccion = get_object_or_404(TipoTransaccion, pk=pk)
+    if request.method == "POST":
+        transaccion.activo = False
+        transaccion.save(update_fields=["activo", "actualizado"])
+    return redirect("facturacion:catalogo_transacciones")
 
 
 @login_required
