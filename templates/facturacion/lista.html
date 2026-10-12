@@ -11,11 +11,11 @@
 </div>
 <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
 <table class="data-table min-w-full text-left text-sm">
-<thead><tr><th>Comprobante</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado transacción</th><th>Estado SRI</th><th>Acciones</th></tr></thead>
+<thead><tr><th>CodTrans / NumTrans</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado transacción</th><th>Estado SRI</th><th>Acciones</th></tr></thead>
 <tbody>
 {% for c in comprobantes %}
 <tr>
-<td class="whitespace-nowrap"><span class="font-semibold text-slate-800">{{ c.get_tipo_display }}</span><div class="mt-1 text-xs text-slate-500">{{ c.establecimiento }}-{{ c.punto_emision }}-{{ c.secuencial|stringformat:"06d" }}</div></td>
+<td class="whitespace-nowrap"><span class="font-semibold text-slate-800">{{ c.codigo_transaccion }} {{ c.tipo }}</span><div class="mt-1 text-xs text-slate-500">{{ c.get_tipo_display }}</div></td>
 <td class="whitespace-nowrap text-slate-600">{{ c.fecha_emision|date:"d/m/Y" }}</td>
 <td class="text-slate-700">{{ c.cliente.nombres }}</td>
 <td class="whitespace-nowrap font-semibold">$ {{ c.total|floatformat:2 }}</td>
