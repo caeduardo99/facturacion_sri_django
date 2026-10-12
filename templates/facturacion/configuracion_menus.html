@@ -14,7 +14,7 @@
 {% for t in menus %}
 <tr class="hover:bg-slate-50">
 <td class="px-5 py-4 font-semibold">{{ t.nombre }}</td><td class="px-5 py-4 font-mono">{{ t.cod_pantalla|default:"—" }}</td><td class="px-5 py-4 font-mono">{{ t.codigo }}</td><td class="px-5 py-4">{{ t.modulo }}</td><td class="px-5 py-4">{% if t.activo %}Activo{% else %}Inactivo{% endif %}</td>
-<td class="px-5 py-4 whitespace-nowrap"><a class="font-semibold text-blue-600" href="{% url 'facturacion:transaccion_editar' t.pk %}">Configurar</a>{% if t.codigo == "FE" and t.activo and t.cod_pantalla == "FACT" %}<span class="ml-3 text-emerald-700">Abrir factura: <a class="font-semibold underline" href="{% url 'facturacion:nuevo' %}">Facturación FE</a></span>{% endif %}</td>
+<td class="px-5 py-4 whitespace-nowrap"><a class="font-semibold text-blue-600" href="{% url 'facturacion:transaccion_editar' t.pk %}">Configurar</a>{% if t.activo and t.cod_pantalla|upper == "FACT" and t.modulo|lower == "facturación" %}<span class="ml-3 text-emerald-700"><a class="font-semibold underline" href="{% url 'facturacion:nuevo' %}?transaccion={{ t.codigo|urlencode }}">Abrir {{ t.codigo }}</a></span>{% endif %}</td>
 </tr>
 {% empty %}<tr><td colspan="6" class="px-5 py-12 text-center text-slate-500">No hay menús configurados. Crea la transacción FE en el catálogo.</td></tr>{% endfor %}
 </tbody></table></div>
