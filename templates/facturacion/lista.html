@@ -2,6 +2,27 @@
 {% block title %}Facturación | FacturaEC{% endblock %}
 {% block header_title %}Facturación{% endblock %}
 {% block content %}
-<div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h1 class="text-3xl font-bold">Facturación</h1><p class="mt-1 text-slate-500">Administra tus comprobantes electrónicos.</p></div><div class="flex flex-wrap gap-3"><a href="{% url 'facturacion:consulta_general' %}" class="rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700">Consulta general de transacciones</a><a href="{% url 'facturacion:nuevo' %}" class="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">Nueva factura</a></div></div>
-<div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm"><table class="min-w-full text-left text-sm"><thead class="bg-slate-50 text-xs uppercase text-slate-500"><tr><th class="px-6 py-4">Comprobante</th><th class="px-6 py-4">Fecha</th><th class="px-6 py-4">Cliente</th><th class="px-6 py-4">Total</th><th class="px-6 py-4">Estado transacción</th><th class="px-6 py-4">Estado SRI</th><th class="px-6 py-4 text-right">Acciones</th></tr></thead><tbody class="divide-y divide-slate-100">{% for c in comprobantes %}<tr class="hover:bg-slate-50"><td class="px-6 py-4 font-medium">{{ c.get_tipo_display }} {{ c.establecimiento }}-{{ c.punto_emision }}-{{ c.secuencial|stringformat:"06d" }}</td><td class="px-6 py-4">{{ c.fecha_emision }}</td><td class="px-6 py-4">{{ c.cliente.nombres }}</td><td class="px-6 py-4">$ {{ c.total|floatformat:2 }}</td><td class="px-6 py-4">{{ c.get_estado_transaccion_display }}</td><td class="px-6 py-4">{{ c.get_estado_display }}</td><td class="px-6 py-4 text-right"><a href="{% url 'facturacion:detalle' c.pk %}" class="mr-3 font-semibold text-blue-600">Ver</a>{% if c.estado_transaccion != "ANULADO" %}<form method="post" action="{% url 'facturacion:anular' c.pk %}" class="inline">{% csrf_token %}<button class="font-semibold text-red-600" onclick="return confirm('¿Anular esta factura?')">Anular</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="7" class="px-6 py-12 text-center text-slate-500">No existen comprobantes.</td></tr>{% endfor %}</tbody></table></div>
+<div class="page-head">
+  <div><h1>Facturación</h1><p>Administra los comprobantes electrónicos registrados en el sistema.</p></div>
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'facturacion:consulta_general' %}" class="secondary-action">⌕ Consulta general</a>
+    <a href="{% url 'facturacion:nuevo' %}" class="primary-action">＋ Nueva factura</a>
+  </div>
+</div>
+<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+<table class="data-table min-w-full text-left text-sm">
+<thead><tr><th>Comprobante</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado transacción</th><th>Estado SRI</th><th>Acciones</th></tr></thead>
+<tbody>
+{% for c in comprobantes %}
+<tr>
+<td class="whitespace-nowrap"><span class="font-semibold text-slate-800">{{ c.get_tipo_display }}</span><div class="mt-1 text-xs text-slate-500">{{ c.establecimiento }}-{{ c.punto_emision }}-{{ c.secuencial|stringformat:"06d" }}</div></td>
+<td class="whitespace-nowrap text-slate-600">{{ c.fecha_emision|date:"d/m/Y" }}</td>
+<td class="text-slate-700">{{ c.cliente.nombres }}</td>
+<td class="whitespace-nowrap font-semibold">$ {{ c.total|floatformat:2 }}</td>
+<td>{% if c.estado_transaccion == "ANULADO" %}<span class="state-badge state-danger">{{ c.get_estado_transaccion_display }}</span>{% elif c.estado_transaccion == "APROBADO" or c.estado_transaccion == "DESPACHADO" %}<span class="state-badge state-success">{{ c.get_estado_transaccion_display }}</span>{% elif c.estado_transaccion == "PENDIENTE" %}<span class="state-badge state-warning">{{ c.get_estado_transaccion_display }}</span>{% else %}<span class="state-badge state-info">{{ c.get_estado_transaccion_display }}</span>{% endif %}</td>
+<td>{% if c.estado == "AUTORIZADO" %}<span class="state-badge state-success">{{ c.get_estado_display }}</span>{% elif c.estado == "NO_AUTORIZADO" %}<span class="state-badge state-danger">{{ c.get_estado_display }}</span>{% elif c.estado == "BORRADOR" %}<span class="state-badge">{{ c.get_estado_display }}</span>{% else %}<span class="state-badge state-info">{{ c.get_estado_display }}</span>{% endif %}</td>
+<td class="whitespace-nowrap"><a href="{% url 'facturacion:detalle' c.pk %}" class="mr-3 font-semibold text-blue-600">Ver detalle</a>{% if c.estado_transaccion != "ANULADO" %}<form method="post" action="{% url 'facturacion:anular' c.pk %}" class="inline">{% csrf_token %}<button type="submit" class="!bg-transparent !p-0 !text-red-600 hover:!text-red-800 hover:!shadow-none" onclick="return confirm('¿Anular esta transacción? Esto no cancela por sí solo la autorización del SRI.')">Anular</button></form>{% endif %}</td>
+</tr>
+{% empty %}<tr><td colspan="7" class="px-5 py-14 text-center"><div class="font-semibold text-slate-700">Todavía no hay comprobantes</div><p class="mt-1 text-sm">Cuando registres una factura, aparecerá en este listado.</p></td></tr>{% endfor %}
+</tbody></table></div>
 {% endblock %}
