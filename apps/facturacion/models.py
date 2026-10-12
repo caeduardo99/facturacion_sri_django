@@ -10,3 +10,34 @@ class DetalleComprobante(models.Model):
 class Pago(models.Model):
     FORMAS=[('01','Sin utilización del sistema financiero'),('16','Tarjeta de débito'),('19','Tarjeta de crédito'),('20','Otros con utilización del sistema financiero')]
     comprobante=models.ForeignKey(Comprobante,on_delete=models.CASCADE,related_name='pagos'); forma_pago=models.CharField(max_length=2,choices=FORMAS,default='20'); total=models.DecimalField(max_digits=14,decimal_places=2); plazo=models.PositiveIntegerField(default=0); unidad_tiempo=models.CharField(max_length=20,default='dias')
+
+
+class TipoTransaccion(models.Model):
+    AMBIENTES = [(1, "Pruebas"), (2, "Producción")]
+    codigo = models.CharField(max_length=10, unique=True)
+    nombre = models.CharField(max_length=150)
+    descripcion = models.CharField(max_length=250, blank=True)
+    cod_pantalla = models.CharField(max_length=30, blank=True)
+    modulo = models.CharField(max_length=80, default="Facturación")
+    transaccion_siguiente = models.PositiveIntegerField(default=1)
+    sucursal = models.CharField(max_length=20, blank=True, default="CUENCA")
+    libreria_impresion = models.CharField(max_length=100, blank=True, default="gnprintG")
+    libreria_ride = models.CharField(max_length=100, blank=True, default="gnprintg")
+    documento_electronico = models.BooleanField(default=False)
+    codigo_documento_sri = models.CharField(max_length=2, blank=True, help_text="Código SRI: 01 factura, 04 nota de crédito, 05 nota de débito, etc.")
+    ambiente_sri = models.PositiveSmallIntegerField(choices=AMBIENTES, default=1)
+    utiliza_formato_estandar_xml = models.BooleanField(default=False)
+    generacion_bloque_xml = models.BooleanField(default=False)
+    seis_decimales = models.BooleanField(default=False)
+    importacion_requerida = models.BooleanField(default=False)
+    activo = models.BooleanField(default=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["codigo"]
+        verbose_name = "Tipo de transacción"
+        verbose_name_plural = "Tipos de transacción"
+
+    def __str__(self):
+        return f"{self.codigo} - {self.nombre}"
