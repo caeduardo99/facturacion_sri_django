@@ -20,6 +20,7 @@
       {% for menu in menus_facturacion %}
       <a href="{% url 'facturacion:nuevo' %}?transaccion={{ menu.codigo|urlencode }}" class="sidebar-link sidebar-sub-link {% if request.GET.transaccion == menu.codigo %}active{% endif %}"><span class="nav-icon">↳</span>{{ menu.nombre }}</a>
       {% endfor %}
+      <a href="/facturacion/ofertas/" class="sidebar-link {% if '/facturacion/ofertas/' in request.path %}active{% endif %}"><span class="nav-icon">▧</span>Ofertas</a>
       <a href="/facturacion/consulta-general/" class="sidebar-link {% if 'consulta-general' in request.path %}active{% endif %}"><span class="nav-icon">⌕</span>Consulta de transacciones</a>
       <div class="nav-group-label">MANTENIMIENTO</div>
       <a href="/clientes/" class="sidebar-link {% if '/clientes/' in request.path %}active{% endif %}"><span class="nav-icon">♙</span>Clientes</a>
@@ -42,7 +43,7 @@
     <details class="mobile-menu">
       <summary aria-label="Abrir menú">☰</summary>
       <nav class="mobile-menu-panel">
-        <a href="/">Inicio</a><a href="/facturacion/">Facturación</a>{% for menu in menus_facturacion %}<a href="{% url 'facturacion:nuevo' %}?transaccion={{ menu.codigo|urlencode }}">{{ menu.nombre }}</a>{% endfor %}<a href="/facturacion/consulta-general/">Consulta de transacciones</a>
+        <a href="/">Inicio</a><a href="/facturacion/">Facturación</a>{% for menu in menus_facturacion %}<a href="{% url 'facturacion:nuevo' %}?transaccion={{ menu.codigo|urlencode }}">{{ menu.nombre }}</a>{% endfor %}<a href="/facturacion/ofertas/">Ofertas</a><a href="/facturacion/consulta-general/">Consulta de transacciones</a>
         <a href="/clientes/">Clientes</a><a href="/productos/">Productos y servicios</a><a href="/empresas/">Empresas</a>
         <a href="/facturacion/configuracion-menus/">Menús y transacciones</a><a href="/facturacion/catalogo-transacciones/">Catálogo de transacciones</a><a href="/reportes/">Reportes</a><a href="/accounts/logout/">Cerrar sesión</a>
       </nav>
