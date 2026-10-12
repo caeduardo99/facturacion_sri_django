@@ -16,6 +16,23 @@
 </tr>
 {% empty %}<tr><td colspan="6" class="px-5 py-8 text-center text-slate-500">No hay ofertas para mostrar con estos filtros.</td></tr>{% endfor %}
 </tbody></table></div>
+
+<div class="results-heading mt-8"><div><h2>Ofertas</h2><p>Ofertas comerciales registradas; no son comprobantes electrónicos.</p></div></div>
+<div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+<table class="data-table min-w-full text-left text-sm">
+<thead><tr><th>Transacción</th><th>Fecha</th><th>Identificación</th><th>Cliente</th><th>Total</th><th>Estado oferta</th></tr></thead>
+<tbody>
+{% for o in ofertas %}
+<tr>
+<td class="whitespace-nowrap"><span class="font-semibold text-slate-800">OF {{ o.id }}</span><div class="mt-1 text-xs text-slate-400">{{ o.numero }}</div></td>
+<td class="whitespace-nowrap text-slate-600">{{ o.fecha|date:"d/m/Y" }}</td>
+<td class="whitespace-nowrap text-slate-600">{{ o.cliente.identificacion }}</td>
+<td><span class="font-medium text-slate-700">{{ o.cliente.nombres }}</span></td>
+<td class="whitespace-nowrap font-semibold text-slate-800">$ {{ o.total|floatformat:2 }}</td>
+<td>{% if o.estado == "FACTURADA" %}<span class="state-badge state-success">Facturada</span>{% elif o.estado == "ANULADA" %}<span class="state-badge state-danger">Anulada</span>{% elif o.estado == "APROBADA" %}<span class="state-badge state-info">Aprobada</span>{% else %}<span class="state-badge">{{ o.get_estado_display }}</span>{% endif %}</td>
+</tr>
+{% empty %}<tr><td colspan="6" class="px-5 py-8 text-center text-slate-500">No hay ofertas para mostrar con estos filtros.</td></tr>{% endfor %}
+</tbody></table></div>
 {% endblock %}
 {% block header_title %}Consulta general de transacciones{% endblock %}
 {% block content %}
