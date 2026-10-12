@@ -25,11 +25,11 @@
 <div class="results-heading"><div><h2>Resultados</h2><p>Los estados se muestran de forma independiente.</p></div></div>
 <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
 <table class="data-table min-w-full text-left text-sm">
-<thead><tr><th>Número</th><th>Fecha</th><th>Identificación</th><th>Cliente</th><th>Total</th><th>Estado transacción</th><th>Estado SRI</th><th>Acciones</th></tr></thead>
+<thead><tr><th>CodTrans / NumTrans</th><th>Fecha</th><th>Identificación</th><th>Cliente</th><th>Total</th><th>Estado transacción</th><th>Estado SRI</th><th>Acciones</th></tr></thead>
 <tbody>
 {% for c in comprobantes %}
 <tr>
-  <td class="whitespace-nowrap"><span class="font-semibold text-slate-800">{{ c.establecimiento }}-{{ c.punto_emision }}-{{ c.secuencial|stringformat:"09d" }}</span><div class="mt-1 text-xs text-slate-400">{{ c.get_tipo_display }}</div></td>
+  <td class="whitespace-nowrap"><span class="font-semibold text-slate-800">{{ c.codigo_transaccion }} {{ c.tipo }}</span><div class="mt-1 text-xs text-slate-400">{{ c.get_tipo_display }}</div></td>
   <td class="whitespace-nowrap text-slate-600">{{ c.fecha_emision|date:"d/m/Y" }}</td>
   <td class="whitespace-nowrap text-slate-600">{{ c.cliente.identificacion }}</td>
   <td><span class="font-medium text-slate-700">{{ c.cliente.nombres }}</span></td>
