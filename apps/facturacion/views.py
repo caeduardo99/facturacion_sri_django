@@ -222,6 +222,8 @@ def descargar_ride(request, pk):
     empresa = Empresa.objects.filter(activo=True).order_by("id").first()
     if not empresa:
         raise Http404("No existe una empresa emisora activa para generar el RIDE.")
+    configuracion_fe = TipoTransaccion.objects.filter(codigo__iexact="FE", activo=True).first()
+    ambiente_ride = configuracion_fe.ambiente_sri if configuracion_fe else empresa.ambiente_sri
 
     buffer = BytesIO()
     numero = f"{comprobante.establecimiento}-{comprobante.punto_emision}-{comprobante.secuencial:09d}"
@@ -271,7 +273,7 @@ def descargar_ride(request, pk):
         [P("<b>NÚMERO DE AUTORIZACIÓN</b>")],
         [P(clave)],
         [P("<b>FECHA Y HORA DE AUTORIZACIÓN:</b> PENDIENTE DE AUTORIZACIÓN")],
-        [P(f"<b>AMBIENTE:</b> {'PRUEBAS' if empresa.ambiente_sri == 1 else 'PRODUCCIÓN'}")],
+        [P(f"<b>AMBIENTE:</b> {'PRUEBAS' if ambiente_ride == 1 else 'PRODUCCIÓN'}")],
         [P("<b>EMISIÓN:</b> NORMAL")],
         [barcode_cell],
     ]
