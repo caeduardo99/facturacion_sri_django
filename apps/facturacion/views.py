@@ -50,12 +50,12 @@ def _clave_acceso(fecha, tipo, ruc, ambiente, establecimiento, punto, secuencial
     return base + str(verificador)
 
 
-def _generar_xml_factura(comprobante, empresa):
+def _generar_xml_factura(comprobante, empresa, ambiente_sri=None):
     cliente = comprobante.cliente
     raiz = ET.Element("factura", {"id": "comprobante", "version": "1.1.0"})
     info = ET.SubElement(raiz, "infoTributaria")
     for tag, value in [
-        ("ambiente", empresa.ambiente_sri), ("tipoEmision", "1"),
+        ("ambiente", ambiente_sri or empresa.ambiente_sri), ("tipoEmision", "1"),
         ("razonSocial", empresa.razon_social), ("nombreComercial", empresa.nombre_comercial),
         ("ruc", empresa.ruc), ("claveAcceso", comprobante.clave_acceso),
         ("codDoc", comprobante.tipo), ("estab", comprobante.establecimiento),
