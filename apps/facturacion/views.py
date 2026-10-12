@@ -12,8 +12,9 @@ from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-import qrcode
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, KeepTogether
+from reportlab.graphics.barcode import Code128
+from reportlab.graphics.shapes import Drawing
 
 from apps.clientes.models import Cliente
 from apps.empresas.models import Empresa
@@ -161,106 +162,162 @@ def descargar_ride(request, pk):
         raise Http404("No existe una empresa emisora activa para generar el RIDE.")
 
     buffer = BytesIO()
+    numero = f"{comprobante.establecimiento}-{comprobante.punto_emision}-{comprobante.secuencial:09d}"
+    clave = comprobante.clave_acceso or ""
     doc = SimpleDocTemplate(
-        buffer, pagesize=A4, rightMargin=15*mm, leftMargin=15*mm,
-        topMargin=12*mm, bottomMargin=12*mm,
-        title=f"RIDE {comprobante.establecimiento}-{comprobante.punto_emision}-{comprobante.secuencial:09d}",
+        buffer, pagesize=A4, rightMargin=10*mm, leftMargin=10*mm,
+        topMargin=8*mm, bottomMargin=10*mm, title=f"RIDE {numero}",
     )
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="EmpresaTitle", parent=styles["Title"], fontSize=14, leading=17, alignment=0, textColor=colors.HexColor("#172554")))
-    styles.add(ParagraphStyle(name="SmallText", parent=styles["Normal"], fontSize=8, leading=10))
-    styles.add(ParagraphStyle(name="RightText", parent=styles["Normal"], alignment=TA_RIGHT, fontSize=9))
+    styles.add(ParagraphStyle(name="RideSmall", parent=styles["Normal"], fontSize=6.8, leading=8.2, spaceAfter=0))
+    styles.add(ParagraphStyle(name="RideTiny", parent=styles["Normal"], fontSize=5.8, leading=7, spaceAfter=0))
+    styles.add(ParagraphStyle(name="RideSection", parent=styles["Normal"], fontSize=7.2, leading=8.5, spaceAfter=0))
+    styles.add(ParagraphStyle(name="RideRight", parent=styles["RideSmall"], alignment=TA_RIGHT))
+    styles.add(ParagraphStyle(name="RideBold", parent=styles["RideSmall"], fontName="Helvetica-Bold"))
     story = []
-    numero = f"{comprobante.establecimiento}-{comprobante.punto_emision}-{comprobante.secuencial:09d}"
-    story.append(Paragraph(empresa.razon_social, styles["EmpresaTitle"]))
-    if empresa.nombre_comercial:
-        story.append(Paragraph(empresa.nombre_comercial, styles["Normal"]))
-    story.append(Paragraph(f"RUC: {empresa.ruc}<br/>Matriz: {empresa.direccion_matriz or 'No registrada'}", styles["SmallText"]))
-    story.append(Spacer(1, 5*mm))
+    border = colors.black
+    pad = 4
 
-    qr_buffer = BytesIO()
-    qr_img = qrcode.make(comprobante.clave_acceso or numero)
-    qr_img.save(qr_buffer, format="PNG")
-    qr_buffer.seek(0)
-    qr = Image(qr_buffer, width=28*mm, height=28*mm)
-    resumen = [
-        [Paragraph("<b>COMPROBANTE ELECTRÓNICO</b>", styles["Normal"]), Paragraph("<b>FACTURA</b>", styles["Normal"])],
-        [Paragraph(f"<b>No.</b> {numero}<br/><b>Fecha de emisión:</b> {comprobante.fecha_emision.strftime('%d/%m/%Y')}<br/><b>Ambiente:</b> {'Pruebas' if empresa.ambiente_sri == 1 else 'Producción'}<br/><b>Emisión:</b> Normal", styles["SmallText"]),
-         Paragraph(f"<b>Clave de acceso:</b><br/>{comprobante.clave_acceso}", styles["SmallText"])],
-        [Paragraph(f"<b>Razón social:</b> {empresa.razon_social}<br/><b>RUC:</b> {empresa.ruc}<br/><b>Dirección matriz:</b> {empresa.direccion_matriz or 'No registrada'}", styles["SmallText"]), qr],
+    def P(text, style="RideSmall"):
+        return Paragraph(str(text), styles[style])
+
+    # Encabezado: datos del emisor a la izquierda y bloque tributario a la derecha,
+    # siguiendo la distribución del RIDE de referencia adjuntado.
+    emisor = [
+        [P(f"<b>{empresa.razon_social}</b>", "RideSection")],
+        [P(empresa.nombre_comercial or "", "RideSmall")],
+        [P(f"<b>Dirección Matriz:</b> {empresa.direccion_matriz or ''}")],
+        [P(f"<b>Dirección Sucursal:</b> {empresa.direccion_matriz or ''}")],
+        [P(f"<b>OBLIGADO A LLEVAR CONTABILIDAD</b> &nbsp;&nbsp;&nbsp; {'SI' if empresa.obligado_contabilidad else 'NO'}")],
     ]
-    tabla_resumen = Table(resumen, colWidths=[100*mm, 75*mm])
-    tabla_resumen.setStyle(TableStyle([
-        ("BOX", (0,0), (-1,-1), 0.7, colors.HexColor("#94A3B8")),
-        ("INNERGRID", (0,0), (-1,-1), 0.4, colors.HexColor("#CBD5E1")),
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#EFF6FF")),
-        ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
-        ("LEFTPADDING", (0,0), (-1,-1), 7), ("RIGHTPADDING", (0,0), (-1,-1), 7),
-        ("TOPPADDING", (0,0), (-1,-1), 6), ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+    tabla_emisor = Table(emisor, colWidths=[83*mm], rowHeights=[None, None, 15*mm, 15*mm, 12*mm])
+    tabla_emisor.setStyle(TableStyle([
+        ("BOX",(0,0),(-1,-1),0.7,border),("VALIGN",(0,0),(-1,-1),"MIDDLE"),
+        ("LEFTPADDING",(0,0),(-1,-1),pad),("RIGHTPADDING",(0,0),(-1,-1),pad),
+        ("TOPPADDING",(0,0),(-1,-1),3),("BOTTOMPADDING",(0,0),(-1,-1),3),
     ]))
-    story.append(tabla_resumen)
-    story.append(Spacer(1, 5*mm))
 
-    comprador = [
-        [Paragraph("<b>DATOS DEL CLIENTE</b>", styles["Normal"])],
-        [Paragraph(f"<b>Identificación:</b> {comprobante.cliente.identificacion}<br/><b>Razón social / nombres:</b> {comprobante.cliente.nombres}<br/><b>Dirección:</b> {getattr(comprobante.cliente, 'direccion', '') or 'No registrada'}<br/><b>Email:</b> {getattr(comprobante.cliente, 'email', '') or 'No registrado'}", styles["SmallText"])],
+    barcode_cell = P("CLAVE DE ACCESO", "RideBold")
+    if clave:
+        barcode = Code128(clave, barHeight=12*mm, barWidth=0.34*mm, humanReadable=True)
+        dibujo = Drawing(75*mm, 18*mm)
+        dibujo.add(barcode)
+        barcode_cell = [barcode_cell, Spacer(1, 2*mm), dibujo]
+
+    datos_tributarios = [
+        [P(f"<b>R.U.C.:</b> {empresa.ruc}", "RideSection")],
+        [P("<b>FACTURA</b>", "RideSection")],
+        [P(f"<b>No.</b> {numero}")],
+        [P("<b>NÚMERO DE AUTORIZACIÓN</b>")],
+        [P(clave)],
+        [P(f"<b>FECHA Y HORA DE AUTORIZACIÓN:</b> {comprobante.fecha_emision.strftime('%d/%m/%Y')}")],
+        [P(f"<b>AMBIENTE:</b> {'PRUEBAS' if empresa.ambiente_sri == 1 else 'PRODUCCIÓN'}")],
+        [P("<b>EMISIÓN:</b> NORMAL")],
+        [barcode_cell],
     ]
-    tabla_cliente = Table(comprador, colWidths=[175*mm])
-    tabla_cliente.setStyle(TableStyle([
-        ("BOX", (0,0), (-1,-1), 0.7, colors.HexColor("#94A3B8")),
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#EFF6FF")),
-        ("LEFTPADDING", (0,0), (-1,-1), 7), ("TOPPADDING", (0,0), (-1,-1), 6),
-        ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+    tabla_tributaria = Table(datos_tributarios, colWidths=[87*mm])
+    tabla_tributaria.setStyle(TableStyle([
+        ("BOX",(0,0),(-1,-1),0.7,border),("VALIGN",(0,0),(-1,-1),"MIDDLE"),
+        ("LEFTPADDING",(0,0),(-1,-1),pad),("RIGHTPADDING",(0,0),(-1,-1),pad),
+        ("TOPPADDING",(0,0),(-1,-1),3),("BOTTOMPADDING",(0,0),(-1,-1),3),
     ]))
-    story.append(tabla_cliente)
-    story.append(Spacer(1, 5*mm))
-
-    filas = [[
-        Paragraph("<b>Código</b>", styles["SmallText"]),
-        Paragraph("<b>Descripción</b>", styles["SmallText"]),
-        Paragraph("<b>Cant.</b>", styles["SmallText"]),
-        Paragraph("<b>Precio unit.</b>", styles["SmallText"]),
-        Paragraph("<b>Descuento</b>", styles["SmallText"]),
-        Paragraph("<b>Total</b>", styles["SmallText"]),
-    ]]
-    for item in comprobante.detalles.all():
-        filas.append([
-            Paragraph(str(item.codigo), styles["SmallText"]),
-            Paragraph(str(item.descripcion)[:300], styles["SmallText"]),
-            f"{item.cantidad.normalize():f}",
-            f"$ {item.precio_unitario:.2f}",
-            f"$ {item.descuento:.2f}",
-            f"$ {item.total:.2f}",
-        ])
-    tabla_detalles = Table(filas, colWidths=[22*mm, 69*mm, 18*mm, 25*mm, 20*mm, 21*mm], repeatRows=1)
-    tabla_detalles.setStyle(TableStyle([
-        ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#DBEAFE")),
-        ("GRID", (0,0), (-1,-1), 0.35, colors.HexColor("#CBD5E1")),
-        ("VALIGN", (0,0), (-1,-1), "TOP"),
-        ("ALIGN", (2,1), (-1,-1), "RIGHT"),
-        ("LEFTPADDING", (0,0), (-1,-1), 4), ("RIGHTPADDING", (0,0), (-1,-1), 4),
-        ("TOPPADDING", (0,0), (-1,-1), 5), ("BOTTOMPADDING", (0,0), (-1,-1), 5),
-    ]))
-    story.append(tabla_detalles)
+    cabecera = Table([[tabla_emisor, tabla_tributaria]], colWidths=[86*mm, 89*mm])
+    cabecera.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP"),("LEFTPADDING",(0,0),(-1,-1),0),("RIGHTPADDING",(0,0),(-1,-1),2)]))
+    story.append(cabecera)
     story.append(Spacer(1, 4*mm))
 
-    totales = [
-        ["Subtotal", f"$ {comprobante.subtotal:.2f}"],
-        ["Descuento", f"$ {comprobante.descuento:.2f}"],
-        ["IVA", f"$ {comprobante.iva:.2f}"],
-        ["VALOR TOTAL", f"$ {comprobante.total:.2f}"],
+    comprador = [
+        [P("<b>Razón Social / Nombres y Apellidos:</b>"), P(comprobante.cliente.nombres),
+         P("<b>Placa / Matrícula:</b>"), P("")],
+        [P("<b>Identificación</b>"), P(comprobante.cliente.identificacion),
+         P("<b>Guía</b>"), P("")],
+        [P("<b>Fecha</b>"), P(comprobante.fecha_emision.strftime("%d/%m/%Y")),
+         P("<b>Dirección:</b>"), P(getattr(comprobante.cliente, "direccion", "") or "")],
     ]
-    tabla_totales = Table(totales, colWidths=[40*mm, 35*mm], hAlign="RIGHT")
-    tabla_totales.setStyle(TableStyle([
-        ("ALIGN", (1,0), (1,-1), "RIGHT"),
-        ("LINEABOVE", (0,3), (-1,3), 0.8, colors.HexColor("#334155")),
-        ("FONTNAME", (0,3), (-1,3), "Helvetica-Bold"),
-        ("FONTSIZE", (0,0), (-1,-1), 9),
-        ("TOPPADDING", (0,0), (-1,-1), 4), ("BOTTOMPADDING", (0,0), (-1,-1), 4),
+    tabla_comprador = Table(comprador, colWidths=[35*mm, 58*mm, 32*mm, 50*mm])
+    tabla_comprador.setStyle(TableStyle([
+        ("BOX",(0,0),(-1,-1),0.7,border),("INNERGRID",(0,0),(-1,-1),0.35,colors.HexColor("#777777")),
+        ("VALIGN",(0,0),(-1,-1),"MIDDLE"),("LEFTPADDING",(0,0),(-1,-1),pad),
+        ("RIGHTPADDING",(0,0),(-1,-1),pad),("TOPPADDING",(0,0),(-1,-1),5),
+        ("BOTTOMPADDING",(0,0),(-1,-1),5),
     ]))
-    story.append(tabla_totales)
-    story.append(Spacer(1, 5*mm))
-    story.append(Paragraph(f"<b>Estado en el sistema:</b> {comprobante.get_estado_display()}. Este RIDE es una representación impresa de los datos guardados; no confirma por sí solo la autorización del SRI.", styles["SmallText"]))
+    story.append(tabla_comprador)
+    story.append(Spacer(1, 3*mm))
+
+    encabezados = [P("<b>Cod.<br/>Principal</b>","RideTiny"), P("<b>Cod.<br/>Auxiliar</b>","RideTiny"),
+        P("<b>Cantidad</b>","RideTiny"), P("<b>Descripción</b>","RideTiny"),
+        P("<b>Detalle Adicional</b>","RideTiny"), P("<b>Precio Unitario</b>","RideTiny"),
+        P("<b>Subsidio</b>","RideTiny"), P("<b>Precio sin Subsidio</b>","RideTiny"),
+        P("<b>Descuento</b>","RideTiny"), P("<b>Precio Total</b>","RideTiny")]
+    filas = [encabezados]
+    for item in comprobante.detalles.all():
+        filas.append([
+            P(item.codigo,"RideTiny"), P("","RideTiny"), P(f"{item.cantidad:.2f}","RideTiny"),
+            P(item.descripcion,"RideTiny"), P("","RideTiny"), P(f"{item.precio_unitario:.2f}","RideTiny"),
+            P("0.00","RideTiny"), P(f"{item.precio_unitario:.2f}","RideTiny"),
+            P(f"{item.descuento:.2f}","RideTiny"), P(f"{item.total:.2f}","RideTiny")
+        ])
+    tabla_detalles = Table(filas, colWidths=[15*mm, 14*mm, 15*mm, 37*mm, 23*mm, 17*mm, 13*mm, 18*mm, 15*mm, 18*mm], repeatRows=1)
+    tabla_detalles.setStyle(TableStyle([
+        ("GRID",(0,0),(-1,-1),0.45,border),("VALIGN",(0,0),(-1,-1),"MIDDLE"),
+        ("ALIGN",(0,0),(-1,-1),"CENTER"),("LEFTPADDING",(0,0),(-1,-1),2),
+        ("RIGHTPADDING",(0,0),(-1,-1),2),("TOPPADDING",(0,0),(-1,-1),5),
+        ("BOTTOMPADDING",(0,0),(-1,-1),5),("BACKGROUND",(0,0),(-1,0),colors.HexColor("#F2F2F2")),
+    ]))
+    story.append(tabla_detalles)
+    story.append(Spacer(1, 3*mm))
+
+    adicionales = []
+    if getattr(comprobante.cliente, "email", ""):
+        adicionales.append([P("<b>Email:</b>"), P(comprobante.cliente.email)])
+    if not adicionales:
+        adicionales = [[P("<b>Información Adicional</b>"), P("")]]
+    tabla_adicional = Table([[P("<b>Información Adicional</b>"), P("")]] + adicionales, colWidths=[32*mm, 55*mm])
+    tabla_adicional.setStyle(TableStyle([
+        ("BOX",(0,0),(-1,-1),0.5,border),("INNERGRID",(0,0),(-1,-1),0.35,border),
+        ("SPAN",(0,0),(-1,0)),("LEFTPADDING",(0,0),(-1,-1),3),("RIGHTPADDING",(0,0),(-1,-1),3),
+        ("TOPPADDING",(0,0),(-1,-1),4),("BOTTOMPADDING",(0,0),(-1,-1),4),
+    ]))
+    pagos_filas = [[P("<b>Forma de pago</b>"), P("<b>Valor</b>")]]
+    for pago in comprobante.pagos.all():
+        pagos_filas.append([P(dict(Pago.FORMAS).get(pago.forma_pago, pago.forma_pago),"RideTiny"), P(f"$ {pago.total:.2f}","RideTiny")])
+    if len(pagos_filas) == 1:
+        pagos_filas.append([P("No registrado"), P(f"$ {comprobante.total:.2f}")])
+    tabla_pagos = Table(pagos_filas, colWidths=[65*mm, 22*mm])
+    tabla_pagos.setStyle(TableStyle([("GRID",(0,0),(-1,-1),0.5,border),("VALIGN",(0,0),(-1,-1),"TOP"),("LEFTPADDING",(0,0),(-1,-1),3),("RIGHTPADDING",(0,0),(-1,-1),3),("TOPPADDING",(0,0),(-1,-1),4),("BOTTOMPADDING",(0,0),(-1,-1),4)]))
+
+    base_iva = sum((d.subtotal for d in comprobante.detalles.all() if Decimal(str(d.producto.porcentaje_iva)) > 0), Decimal("0.00"))
+    base_cero = sum((d.subtotal for d in comprobante.detalles.all() if Decimal(str(d.producto.porcentaje_iva)) == 0), Decimal("0.00"))
+    iva_porcentaje = "15%" if comprobante.iva else "0%"
+    resumen = [
+        [P("SUBTOTAL 15%","RideTiny"), P(f"{base_iva:.2f}","RideTiny")],
+        [P("SUBTOTAL 0%","RideTiny"), P(f"{base_cero:.2f}","RideTiny")],
+        [P("SUBTOTAL NO OBJETO DE IVA","RideTiny"), P("0.00","RideTiny")],
+        [P("SUBTOTAL EXENTO DE IVA","RideTiny"), P("0.00","RideTiny")],
+        [P("SUBTOTAL SIN IMPUESTOS","RideTiny"), P(f"{comprobante.subtotal:.2f}","RideTiny")],
+        [P("TOTAL DESCUENTO","RideTiny"), P(f"{comprobante.descuento:.2f}","RideTiny")],
+        [P("ICE","RideTiny"), P("0.00","RideTiny")],
+        [P(f"IVA {iva_porcentaje}","RideTiny"), P(f"{comprobante.iva:.2f}","RideTiny")],
+        [P("IRBPNR","RideTiny"), P("0.00","RideTiny")],
+        [P("PROPINA","RideTiny"), P("0.00","RideTiny")],
+        [P("VALOR TOTAL","RideTiny"), P(f"{comprobante.total:.2f}","RideTiny")],
+        [P("VALOR TOTAL SIN SUBSIDIO","RideTiny"), P(f"{comprobante.total:.2f}","RideTiny")],
+        [P("AHORRO POR SUBSIDIO (incluye IVA cuando corresponda)","RideTiny"), P("0.00","RideTiny")],
+    ]
+    tabla_resumen = Table(resumen, colWidths=[57*mm, 24*mm])
+    tabla_resumen.setStyle(TableStyle([
+        ("GRID",(0,0),(-1,-1),0.45,border),("ALIGN",(1,0),(1,-1),"RIGHT"),
+        ("VALIGN",(0,0),(-1,-1),"MIDDLE"),("LEFTPADDING",(0,0),(-1,-1),3),
+        ("RIGHTPADDING",(0,0),(-1,-1),3),("TOPPADDING",(0,0),(-1,-1),4),
+        ("BOTTOMPADDING",(0,0),(-1,-1),4),("FONTNAME",(0,10),(-1,10),"Helvetica-Bold"),
+    ]))
+    parte_inferior = Table([[tabla_adicional, tabla_resumen],[tabla_pagos, ""]], colWidths=[90*mm, 85*mm])
+    parte_inferior.setStyle(TableStyle([
+        ("VALIGN",(0,0),(-1,-1),"TOP"),("SPAN",(1,0),(1,1)),
+        ("LEFTPADDING",(0,0),(-1,-1),0),("RIGHTPADDING",(0,0),(-1,-1),2),
+        ("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),2),
+    ]))
+    story.append(parte_inferior)
     doc.build(story)
     response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="RIDE_{numero.replace("-", "_")}.pdf"'
