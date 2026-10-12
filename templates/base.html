@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}FacturaEC{% endblock %}</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>tailwind.config={theme:{extend:{colors:{brand:{50:'#eff6ff',100:'#dbeafe',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8'}}}}}</script>
@@ -9,18 +10,51 @@
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800 antialiased">
 <div class="min-h-screen lg:flex">
-<aside class="hidden lg:flex lg:w-64 lg:flex-col bg-slate-900 text-white">
-<div class="flex h-20 items-center px-6 border-b border-slate-800"><a href="/" class="text-2xl font-extrabold">Factura<span class="text-cyan-400">EC</span></a></div>
-<nav class="flex-1 px-4 py-6 space-y-1">
-<a href="/" class="sidebar-link">Dashboard</a><a href="/empresas/" class="sidebar-link">Empresas</a><a href="/clientes/" class="sidebar-link">Clientes</a><a href="/productos/" class="sidebar-link">Productos</a><a href="/facturacion/" class="sidebar-link">Facturación</a><a href="/facturacion/configuracion-menus/" class="sidebar-link">Configuración de menús</a><a href="/facturacion/catalogo-transacciones/" class="sidebar-link">Catálogo de transacciones</a><a href="/facturacion/consulta-general/" class="sidebar-link">Consulta general de transacciones</a><a href="/reportes/" class="sidebar-link">Reportes</a>
-</nav>
-<div class="p-4 border-t border-slate-800"><a href="/accounts/logout/" class="sidebar-link">Cerrar sesión</a></div>
-</aside>
-<div class="flex-1 min-w-0">
-<header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-5 sm:px-8">
-<div><p class="text-xs sm:text-sm text-slate-500">Sistema de facturación electrónica</p><h2 class="font-semibold text-slate-900">{% block header_title %}Panel principal{% endblock %}</h2></div>
-<div class="flex items-center gap-3"><span class="hidden sm:inline text-sm text-slate-500">{{ request.user.username }}</span><div class="h-9 w-9 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold">{{ request.user.username|first|upper }}</div></div>
-</header>
-<main class="p-5 sm:p-8 max-w-7xl mx-auto">{% block content %}{% endblock %}</main>
-</div></div>
-</body></html>
+  <aside class="app-sidebar hidden lg:flex lg:w-64 lg:flex-col">
+    <a href="/" class="brand-lockup"><span class="brand-mark">F</span><span>Factura<span class="brand-accent">EC</span><small>FACTURACIÓN ELECTRÓNICA</small></span></a>
+    <div class="sidebar-caption">ESPACIO DE TRABAJO</div>
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+      <a href="/" class="sidebar-link {% if request.path == '/' %}active{% endif %}"><span class="nav-icon">⌂</span>Inicio</a>
+      <div class="nav-group-label">OPERACIÓN</div>
+      <a href="/facturacion/" class="sidebar-link {% if '/facturacion/' in request.path and 'configuracion' not in request.path and 'catalogo' not in request.path %}active{% endif %}"><span class="nav-icon">▤</span>Facturación</a>
+      <a href="/facturacion/consulta-general/" class="sidebar-link {% if 'consulta-general' in request.path %}active{% endif %}"><span class="nav-icon">⌕</span>Consulta de transacciones</a>
+      <div class="nav-group-label">MANTENIMIENTO</div>
+      <a href="/clientes/" class="sidebar-link {% if '/clientes/' in request.path %}active{% endif %}"><span class="nav-icon">♙</span>Clientes</a>
+      <a href="/productos/" class="sidebar-link {% if '/productos/' in request.path %}active{% endif %}"><span class="nav-icon">▦</span>Productos y servicios</a>
+      <a href="/empresas/" class="sidebar-link {% if '/empresas/' in request.path %}active{% endif %}"><span class="nav-icon">▣</span>Empresas</a>
+      <div class="nav-group-label">CONFIGURACIÓN</div>
+      <a href="/facturacion/configuracion-menus/" class="sidebar-link {% if 'configuracion-menus' in request.path %}active{% endif %}"><span class="nav-icon">☷</span>Menús y transacciones</a>
+      <a href="/facturacion/catalogo-transacciones/" class="sidebar-link {% if 'catalogo-transacciones' in request.path %}active{% endif %}"><span class="nav-icon">⚙</span>Catálogo de transacciones</a>
+      <a href="/reportes/" class="sidebar-link {% if '/reportes/' in request.path %}active{% endif %}"><span class="nav-icon">▥</span>Reportes</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+      <div class="min-w-0 flex-1"><div class="truncate text-sm font-semibold text-white">{{ request.user.username }}</div><div class="text-xs text-slate-400">Sesión activa</div></div>
+      <a href="/accounts/logout/" class="logout-link" title="Cerrar sesión" aria-label="Cerrar sesión">↪</a>
+    </div>
+  </aside>
+
+  <div class="mobile-topbar lg:hidden">
+    <a href="/" class="brand-lockup"><span class="brand-mark">F</span><span>Factura<span class="brand-accent">EC</span></span></a>
+    <details class="mobile-menu">
+      <summary aria-label="Abrir menú">☰</summary>
+      <nav class="mobile-menu-panel">
+        <a href="/">Inicio</a><a href="/facturacion/">Facturación</a><a href="/facturacion/consulta-general/">Consulta de transacciones</a>
+        <a href="/clientes/">Clientes</a><a href="/productos/">Productos y servicios</a><a href="/empresas/">Empresas</a>
+        <a href="/facturacion/configuracion-menus/">Menús y transacciones</a><a href="/facturacion/catalogo-transacciones/">Catálogo de transacciones</a><a href="/reportes/">Reportes</a><a href="/accounts/logout/">Cerrar sesión</a>
+      </nav>
+    </details>
+  </div>
+
+  <div class="flex-1 min-w-0">
+    <header class="app-header">
+      <div class="min-w-0"><p class="header-eyebrow">SISTEMA DE GESTIÓN</p><h2 class="header-title">{% block header_title %}Panel principal{% endblock %}</h2></div>
+      <div class="header-user"><span class="status-dot"></span><span class="hidden sm:inline">{{ request.user.username }}</span><div class="header-avatar">{{ request.user.username|first|upper }}</div></div>
+    </header>
+    {% if messages %}<div class="mx-5 mt-5 space-y-2 sm:mx-8">{% for message in messages %}<div class="flash-message {% if message.tags %}flash-{{ message.tags }}{% endif %}">{{ message }}</div>{% endfor %}</div>{% endif %}
+    <main class="app-main">{% block content %}{% endblock %}</main>
+    <footer class="app-footer">FacturaEC <span>·</span> Gestión de comprobantes electrónicos</footer>
+  </div>
+</div>
+</body>
+</html>
