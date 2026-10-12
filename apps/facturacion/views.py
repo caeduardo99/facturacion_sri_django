@@ -203,6 +203,18 @@ def lista(request):
     })
 
 @login_required
+def cambiar_estado_transaccion(request, pk):
+    comprobante = get_object_or_404(Comprobante, pk=pk)
+    if request.method == "POST":
+        nuevo_estado = request.POST.get("estado_transaccion", "").strip()
+        validos = {codigo for codigo, etiqueta in Comprobante.ESTADOS_TRANSACCION}
+        if nuevo_estado in validos:
+            comprobante.estado_transaccion = nuevo_estado
+            comprobante.save(update_fields=["estado_transaccion", "actualizado"])
+    return redirect("facturacion:consulta_general")
+
+
+@login_required
 def consulta_general(request):
     comprobantes = Comprobante.objects.select_related("cliente").all()
     desde = request.GET.get("desde", "").strip()
