@@ -27,8 +27,9 @@
 </div></div>
 <div class="mt-6 flex justify-end"><button class="rounded-xl bg-emerald-600 px-7 py-3 font-semibold text-white">Guardar factura</button></div>
 </form>
-<script>
 {{ clientes_data|json_script:"clientes-data" }}
+{{ productos_data|json_script:"productos-data" }}
+<script>
 const clientesData = JSON.parse(document.getElementById("clientes-data").textContent);
 const buscarCliente = document.getElementById("buscarCliente");
 const clienteId = document.getElementById("clienteId");
@@ -104,7 +105,6 @@ if (clienteId.value) {
   if (clienteActual) seleccionarCliente(clienteActual);
 }
 
-{{ productos_data|json_script:"productos-data" }}
 const data=JSON.parse(document.getElementById("productos-data").textContent);
 const tbody=document.getElementById("detalle");
 function money(n){return "$"+n.toFixed(2)}
