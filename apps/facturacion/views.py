@@ -438,7 +438,18 @@ def descargar_ride(request, pk):
 
 @login_required
 def nuevo(request):
-    configuracion_fe = TipoTransaccion.objects.filter(codigo__iexact="FE", activo=True).first()
+    # Cada entrada del menú FACT envía su propio parámetro (por ejemplo FE o FEZ).
+    codigo_transaccion = (
+        request.POST.get("codigo_transaccion")
+        or request.GET.get("transaccion")
+        or "FE"
+    ).strip()
+    configuracion_fe = TipoTransaccion.objects.filter(
+        codigo__iexact=codigo_transaccion,
+        activo=True,
+        cod_pantalla__iexact="FACT",
+        modulo__iexact="Facturación",
+    ).first()
     clientes = Cliente.objects.filter(activo=True).only("id", "identificacion", "nombres").order_by("nombres")
     clientes_data = [{"id": c.id, "identificacion": c.identificacion, "nombres": c.nombres} for c in clientes]
     productos = Producto.objects.filter(activo=True).order_by("nombre")
@@ -448,8 +459,10 @@ def nuevo(request):
         if not configuracion_fe:
             return render(request, "facturacion/nuevo.html", {
                 "clientes": clientes, "clientes_data": clientes_data, "productos": productos, "productos_data": productos_data,
-                "error": "No existe una transacción FE activa. Configúrala en Catálogo de transacciones antes de facturar.",
+                "error": f"No existe una transacción activa con código {codigo_transaccion} asociada a la pantalla FACT.",
                 "form": request.POST,
+                "configuracion_fe": configuracion_fe,
+                "codigo_transaccion": codigo_transaccion,
             })
         cliente_id = request.POST.get("cliente")
         tipo = configuracion_fe.codigo_documento_sri or "01"
@@ -464,6 +477,8 @@ def nuevo(request):
                 "clientes": clientes, "clientes_data": clientes_data, "productos": productos, "productos_data": productos_data,
                 "error": "Selecciona un cliente válido.",
                 "form": request.POST,
+                "configuracion_fe": configuracion_fe,
+                "codigo_transaccion": codigo_transaccion,
             })
 
         if len(establecimiento) != 3 or len(punto_emision) != 3:
@@ -471,6 +486,8 @@ def nuevo(request):
                 "clientes": clientes, "clientes_data": clientes_data, "productos": productos, "productos_data": productos_data,
                 "error": "El establecimiento y el punto de emisión deben tener 3 dígitos.",
                 "form": request.POST,
+                "configuracion_fe": configuracion_fe,
+                "codigo_transaccion": codigo_transaccion,
             })
 
         producto_ids = request.POST.getlist("producto_id")
@@ -505,6 +522,8 @@ def nuevo(request):
                 "clientes": clientes, "clientes_data": clientes_data, "productos": productos, "productos_data": productos_data,
                 "error": "Agrega al menos un producto a la factura.",
                 "form": request.POST,
+                "configuracion_fe": configuracion_fe,
+                "codigo_transaccion": codigo_transaccion,
             })
 
         total = subtotal + iva
@@ -514,6 +533,8 @@ def nuevo(request):
                 "clientes": clientes, "clientes_data": clientes_data, "productos": productos, "productos_data": productos_data,
                 "error": "Primero registra y activa una empresa emisora en la pantalla Empresas.",
                 "form": request.POST,
+                "configuracion_fe": configuracion_fe,
+                "codigo_transaccion": codigo_transaccion,
             })
 
         with transaction.atomic():
@@ -569,6 +590,7 @@ def nuevo(request):
         "productos": productos,
         "productos_data": productos_data,
         "configuracion_fe": configuracion_fe,
+        "codigo_transaccion": codigo_transaccion,
     })
 
 
